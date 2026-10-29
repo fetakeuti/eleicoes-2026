@@ -1,0 +1,9 @@
+{
+  "name": "webreport-eleicao-2026",
+  "private": true,
+  "type": "module",
+  "description": "Webreport da eleição presidencial de 2026. Site estático; o Node serve só para os testes.",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\""
+  }
+}

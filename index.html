@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eleição Presidencial 2026 — resultados do TSE</title>
+<meta name="description" content="Resultado, comparação entre turnos, mapas por UF, município e país, e brancos e nulos da eleição presidencial de 2026, com dados abertos do TSE.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+<header class="barra" data-slot="barra">
+  <div class="barra__in">
+    <a class="barra__titulo" href="#resultado">Eleição 2026</a>
+    <nav class="barra__nav" aria-label="Seções">
+      <ol>
+        <li><a href="#resultado">Resultado</a></li>
+        <li><a href="#comparacao">1º × 2º turno</a></li>
+        <li><a href="#mapa">Mapa do Brasil</a></li>
+        <li><a href="#brancos">Brancos e nulos</a></li>
+        <li><a href="#exterior">Exterior</a></li>
+        <li class="barra__sobre"><a href="#sobre">Sobre os dados</a></li>
+      </ol>
+    </nav>
+  </div>
+</header>
+
+<main id="conteudo">
+  <div class="aviso-carga" data-slot="carga" role="status" aria-live="polite">
+    <div class="leitura"><p class="carregando">Carregando os dados…</p></div>
+  </div>
+
+  <section id="resultado" class="secao secao--resultado" aria-labelledby="h-resultado">
+    <div class="leitura">
+      <p class="rotulo">Eleição presidencial 2026 · Resultado do 2º turno</p>
+      <h1 id="h-resultado" class="manchete" data-slot="manchete">Eleição presidencial 2026</h1>
+      <p class="linha-fina" data-slot="linhaFina"></p>
+      <div class="resultado-barra" data-slot="barraResultado"></div>
+      <div class="kpis" data-slot="kpisResultado"></div>
+    </div>
+  </section>
+
+  <section id="comparacao" class="secao" aria-labelledby="h-comp">
+    <div class="leitura">
+      <div class="secao__cab">
+        <p class="rotulo">1 · Comparação entre turnos</p>
+        <h2 id="h-comp" class="titulo-secao" data-slot="compTitulo">Do 1º para o 2º turno</h2>
+        <p class="linha-fina">Votos por candidato e participação, lado a lado. A variação é sempre o 2º turno menos o 1º turno.</p>
+      </div>
+      <div class="controles">
+        <div class="campo">
+          <span class="rotulo" id="rot-unidade">Unidade da variação</span>
+          <div class="segmentado" role="group" aria-labelledby="rot-unidade" data-slot="unidade"></div>
+        </div>
+        <div class="legenda-turnos" aria-hidden="true">
+          <span><i class="amostra amostra--turno1"></i>1º turno</span>
+          <span><i class="amostra amostra--turno2"></i>2º turno</span>
+        </div>
+      </div>
+      <h3 class="subtitulo">Votos por candidato <small>% sobre votos válidos</small></h3>
+      <div class="tabela-cand" data-slot="candidatos"></div>
+      <h3 class="subtitulo">Participação <small>Brasil + exterior</small></h3>
+      <div class="rolagem" tabindex="0" role="region" aria-label="Tabela de participação, role para os lados">
+        <div class="tabela-part" data-slot="participacao"></div>
+      </div>
+      <h3 class="subtitulo">Para onde foi cada eleitor <small>% de comparecimento + abstenção</small></h3>
+      <div class="composicoes" data-slot="composicao"></div>
+      <div class="notas" data-slot="notasComp"></div>
+    </div>
+  </section>
+
+  <section id="mapa" class="secao" aria-labelledby="h-mapa">
+    <div class="largo">
+      <div class="secao__cab">
+        <p class="rotulo">2 · Mapa do Brasil</p>
+        <h2 id="h-mapa" class="titulo-secao">Onde cada candidato teve mais votos, e onde se votou menos</h2>
+        <p class="linha-fina">Por UF e por município. O exterior fica fora do mapa e da escala.</p>
+      </div>
+      <div class="em-obra">O mapa do Brasil entra na Fase C.</div>
+    </div>
+  </section>
+
+  <section id="brancos" class="secao" aria-labelledby="h-bn">
+    <div class="leitura">
+      <div class="secao__cab">
+        <p class="rotulo">3 · Brancos e nulos</p>
+        <h2 id="h-bn" class="titulo-secao" data-slot="bnTitulo">Brancos e nulos</h2>
+        <p class="linha-fina" data-slot="bnFina"></p>
+      </div>
+      <div class="kpis kpis--bn" data-slot="bnKpis"></div>
+      <h3 class="subtitulo">Brancos e nulos, de perto <small>eixo de 0 a 5% do total de votos</small></h3>
+      <div class="rolagem" tabindex="0" role="region" aria-label="Brancos e nulos de perto, role para os lados">
+        <div class="tabela-bn" data-slot="bnZoom"></div>
+      </div>
+      <h3 class="subtitulo">No conjunto do eleitorado <small>% de comparecimento + abstenção</small></h3>
+      <div class="composicoes" data-slot="bnComposicao"></div>
+      <div class="notas" data-slot="bnNotas"></div>
+    </div>
+  </section>
+
+  <section id="exterior" class="secao" aria-labelledby="h-ext">
+    <div class="largo">
+      <div class="secao__cab">
+        <p class="rotulo">4 · Exterior</p>
+        <h2 id="h-ext" class="titulo-secao">Como votaram os brasileiros no exterior</h2>
+        <p class="linha-fina">Por país, com as cidades onde houve seção eleitoral.</p>
+      </div>
+      <div class="em-obra">O mapa-múndi entra na Fase D.</div>
+    </div>
+  </section>
+
+  <section id="sobre" class="secao" aria-labelledby="h-sobre">
+    <div class="leitura">
+      <div class="secao__cab">
+        <p class="rotulo">5 · Sobre os dados</p>
+        <h2 id="h-sobre" class="titulo-secao">Como cada número foi calculado</h2>
+      </div>
+      <div class="sobre" data-slot="sobre"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="rodape">
+  <div class="leitura" data-slot="rodape">
+    <p>Fonte: Tribunal Superior Eleitoral (TSE), Portal de Dados Abertos.</p>
+  </div>
+</footer>
+</body>
+</html>
