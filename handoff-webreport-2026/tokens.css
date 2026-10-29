@@ -1,0 +1,114 @@
+/* =====================================================================
+   Webreport Eleição Presidencial 2026 — design tokens (Direção A · Caderno)
+   Fonte única de cor, tipo, espaço, raio e sombra. Não usar hex fora daqui.
+   ===================================================================== */
+
+:root {
+  /* ---------- Base ---------- */
+  --cor-fundo: #F7F7F5;          /* fundo da página */
+  --cor-painel: #FFFFFF;         /* cartões, mapas, folhas */
+  --cor-tinta: #16181D;          /* texto principal, filetes fortes, botão ativo */
+  --cor-texto-2: #2A2E36;        /* texto corrido secundário */
+  --cor-apoio: #5B6270;          /* rótulos, legendas (4,5:1+ sobre branco) */
+  --cor-linha: #C9CDD3;          /* filete padrão */
+  --cor-linha-suave: #DCDFE3;    /* bordas de cartão */
+  --cor-linha-fraca: #ECEEF1;    /* separadores de linha de tabela */
+  --cor-realce: #ECEEF1;         /* coluna "Variação", linha em foco, avisos */
+  --cor-rodape-fundo: #16181D;
+  --cor-rodape-texto: #E7E9EC;
+  --cor-rodape-apoio: #C9CED6;
+  --cor-link: #3B4A63;
+
+  /* ---------- Candidatos (fixo por número, em todas as visões) ---------- */
+  --cand-13: #5E3C99;            /* LULA */
+  --cand-13-claro: #C3B4E0;      /* LULA, barra do 1º turno */
+  --cand-22: #B35806;            /* FLAVIO BOLSONARO */
+  --cand-22-claro: #EDBE8F;      /* FLAVIO, barra do 1º turno */
+  --cand-demais: #8A919D;        /* os outros 10 do 1º turno */
+
+  /* ---------- Turnos (gráficos sem candidato) ---------- */
+  --turno-1: #C9CDD3;
+  --turno-2: #16181D;
+
+  /* ---------- Composição do voto ---------- */
+  --cat-validos: #DCDFE3;
+  --cat-brancos: #8A919D;
+  --cat-nulos: #3B4252;
+  --cat-abstencao-a: #DCDFE3;    /* hachura: repeating-linear-gradient(135deg, a 0 4px, b 4px 8px) */
+  --cat-abstencao-b: #F7F7F5;
+
+  /* ---------- Rampas dos mapas (classe 1 = mais clara) ---------- */
+  /* Vencedor e margem / % do candidato */
+  --rampa-13-1: #E6E0F2; --rampa-13-2: #C3B4E0; --rampa-13-3: #9A82C9; --rampa-13-4: #7356AE; --rampa-13-5: #4E2C8A;
+  --rampa-22-1: #F7E3CF; --rampa-22-2: #EDBE8F; --rampa-22-3: #DB9450; --rampa-22-4: #C06C1C; --rampa-22-5: #8F4A06;
+  --rampa-demais-1: #EEF0F2; --rampa-demais-2: #D2D6DC; --rampa-demais-3: #A9AFB8; --rampa-demais-4: #7D8592; --rampa-demais-5: #4A515C;
+
+  /* Abstenção — Brasil (UF e município) */
+  --abst-br-1: #EEF2F6; --abst-br-2: #C9D4E1; --abst-br-3: #9DB0C7; --abst-br-4: #6E88A8; --abst-br-5: #456285; --abst-br-6: #1E3550;
+  /* Abstenção — exterior (escala independente, outro matiz de propósito) */
+  --abst-ext-1: #EEF3F0; --abst-ext-2: #CFE0D6; --abst-ext-3: #A5C4B2; --abst-ext-4: #76A28A; --abst-ext-5: #4C7D63; --abst-ext-6: #28503E;
+
+  /* Divergente — deslocamento da margem (− = FLAVIO, + = LULA) */
+  --div-margem-1: #8F4A06; --div-margem-2: #C06C1C; --div-margem-3: #DB9450; --div-margem-4: #F7E3CF;
+  --div-margem-5: #E6E0F2; --div-margem-6: #9A82C9; --div-margem-7: #7356AE; --div-margem-8: #4E2C8A;
+  /* Divergente — variação da abstenção (− = caiu, + = subiu) */
+  --div-abst-1: #0F5257; --div-abst-2: #3B8A8E; --div-abst-3: #8CC2C2; --div-abst-4: #D7ECEB;
+  --div-abst-5: #F3DCE2; --div-abst-6: #D99AAB; --div-abst-7: #B55A74; --div-abst-8: #7F2443;
+
+  /* Mudança de vencedor */
+  --virou-13: #4E2C8A; --manteve-13: #C3B4E0; --virou-22: #8F4A06; --manteve-22: #EDBE8F;
+
+  /* Estados especiais do mapa */
+  --mapa-empate: #D6D2C8;
+  --mapa-sem-eleitorado: #E9EAEC;   /* país sem eleitor brasileiro: cinza liso */
+  --mapa-hachura-linha: #7D8592;    /* sem votantes: hachura 45°, linha 2px a cada 5px sobre branco */
+  --mapa-neutro: #E2E4E8;           /* fundo do modo "círculos" */
+  --mapa-borda: #FFFFFF;            /* divisa entre polígonos */
+  --mapa-destaque-halo: #FFFFFF;    /* contorno duplo: halo */
+  --mapa-destaque-linha: #16181D;   /* contorno duplo: linha */
+
+  /* ---------- Tipografia ---------- */
+  --fonte-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --fonte-texto: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fonte-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+
+  --tx-display-xl: 54px;   /* manchete do Resultado (desktop) */
+  --tx-display-l: 44px;    /* título de seção (desktop) */
+  --tx-display-m: 26px;    /* nome no painel de detalhe / folha */
+  --tx-kpi: 40px;          /* número grande de KPI */
+  --tx-h3: 20px;           /* subtítulo de bloco */
+  --tx-dek: 17px;          /* linha fina */
+  --tx-corpo: 15px;
+  --tx-pequeno: 13px;
+  --tx-legenda: 12px;
+  --tx-rotulo: 11px;       /* caixa alta, tracking .08em */
+
+  --lh-titulo: 1.1;
+  --lh-corpo: 1.55;
+  --peso-regular: 400; --peso-medio: 500; --peso-semi: 600; --peso-negrito: 700;
+  --tracking-rotulo: 0.08em;
+
+  /* ---------- Espaço (grade de 4/8) ---------- */
+  --esp-1: 4px; --esp-2: 8px; --esp-3: 12px; --esp-4: 16px; --esp-5: 20px; --esp-6: 24px;
+  --esp-8: 32px; --esp-10: 40px; --esp-12: 48px; --esp-16: 64px; --esp-18: 72px;
+  --largura-leitura: 1200px;     /* seções de texto e tabelas */
+  --largura-mapa: 1280px;        /* seções de mapa */
+  --gutter: 32px;                /* lateral desktop */
+  --gutter-mobile: 16px;
+
+  /* ---------- Raios ---------- */
+  --raio-controle: 2px;    /* botões, segmentos, inputs */
+  --raio-pilula: 999px;    /* chips de candidato, ordem, nav mobile */
+  --raio-folha: 16px;      /* topo da folha inferior (mobile) */
+  --raio-ponto: 50%;
+
+  /* ---------- Sombras (só elementos que flutuam) ---------- */
+  --sombra-flutuante: 0 6px 20px rgba(22, 24, 29, 0.16);   /* tooltip, sugestões de busca */
+  --sombra-folha: 0 -6px 20px rgba(22, 24, 29, 0.14);      /* folha inferior */
+
+  /* ---------- Interação ---------- */
+  --alvo-toque: 44px;      /* mínimo de toque */
+  --alvo-mapa-min: 24px;   /* área de toque mínima de polígono/ponto */
+  --foco: 2px solid #16181D; --foco-offset: 2px;
+  --duracao: 150ms;
+}

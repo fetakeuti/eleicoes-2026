@@ -2,7 +2,7 @@
 
 Site estático de uma página (GitHub Pages) com o resultado da eleição presidencial de 2026, a partir dos dados abertos do TSE.
 
-- Design: `../_webreport/_design/` (HANDOFF.md, tokens.css).
+- Design: `handoff-webreport-2026/` (HANDOFF.md, tokens.css, referencia/).
 - Dados: gerados por `../_pipeline/build.py` (contrato em `../_pipeline/CONTRATO_DADOS.md`, decisões em `../_pipeline/DECISOES.md`).
 
 ## Atualizar os dados
