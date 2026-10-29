@@ -1,0 +1,496 @@
+{
+  "titulo": "Eleição Presidencial 2026 — dados agregados (TSE)",
+  "gerado_em": "29/10/2026 18:46:58",
+  "pipeline": "_pipeline/build.py (decisões em _pipeline/DECISOES.md)",
+  "fontes": [
+    {
+      "arquivo": "votacao_candidato_munzona_2026/votacao_candidato_munzona_2026_BR.csv",
+      "uso": "votos por candidato (Presidente)",
+      "dt_geracao": [
+        "29/10/2026 12:31:46"
+      ]
+    },
+    {
+      "arquivo": "detalhe_votacao_munzona_2026/detalhe_votacao_munzona_2026_BR.csv",
+      "uso": "aptos, comparecimento, abstenção, total de votos, válidos, brancos e nulos (Presidente)",
+      "dt_geracao": [
+        "29/10/2026 08:31:59"
+      ]
+    },
+    {
+      "arquivo": "Relatorio_Resultado_Totalizacao_2026_BR/6257_BR_BRASIL_2026_T1_PRESIDENTE.pdf",
+      "uso": "conferência (Relatório Resultado da Totalização)",
+      "gerado_em": "07/10/2026 16:37:18"
+    },
+    {
+      "arquivo": "Relatorio_Resultado_Totalizacao_2026_BR/6258_BR_BRASIL_2026_T2_PRESIDENTE.pdf",
+      "uso": "conferência (Relatório Resultado da Totalização)",
+      "gerado_em": "25/10/2026 23:28:44"
+    },
+    {
+      "arquivo": "Relatorio_Resultado_Totalizacao_2026_ZZ/6257_ZZ_EXTERIOR_2026_T1_PRESIDENTE.pdf",
+      "uso": "conferência (Relatório Resultado da Totalização)",
+      "gerado_em": "04/10/2026 23:03:02"
+    },
+    {
+      "arquivo": "Relatorio_Resultado_Totalizacao_2026_ZZ/6258_ZZ_EXTERIOR_2026_T2_PRESIDENTE.pdf",
+      "uso": "conferência (Relatório Resultado da Totalização)",
+      "gerado_em": "25/10/2026 22:15:34"
+    },
+    {
+      "arquivo": "ref/municipios_brasileiros_tse.csv",
+      "uso": "de-para código TSE → IBGE (corrigido pelo IBGE)",
+      "url": "https://raw.githubusercontent.com/betafcc/Municipios-Brasileiros-TSE/master/municipios_brasileiros_tse.csv"
+    },
+    {
+      "arquivo": "ref/ibge_municipios.json",
+      "uso": "validação oficial dos códigos e nomes IBGE",
+      "url": "https://servicodados.ibge.gov.br/api/v1/localidades/municipios"
+    },
+    {
+      "arquivo": "_pipeline/depara_cidade_pais.csv",
+      "uso": "cidade do exterior → país (ISO 3166-1 alfa-3)"
+    },
+    {
+      "arquivo": "ref/ibge_malha_2025/BR_UF_2025.zip, BR_Municipios_2025.zip",
+      "uso": "malhas do Brasil (Malha Municipal Digital 2025, IBGE), simplificadas para o mapa",
+      "url": "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2025/Brasil"
+    },
+    {
+      "arquivo": "ref/world_atlas/countries-50m.json",
+      "uso": "malha mundial (Natural Earth 1:50m, pacote world-atlas 2.0.2)",
+      "url": "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json"
+    }
+  ],
+  "definicoes": {
+    "escopo": "Só o cargo Presidente, nos 1º e 2º turnos. Exterior = SG_UF 'ZZ'. Não há voto em trânsito separado: está embutido no local de votação.",
+    "votos_validos": "QT_TOTAL_VOTOS_VALIDOS = soma dos votos nominais dos candidatos.",
+    "nulos": "QT_TOTAL_VOTOS_NULOS = nulos na urna + nulos técnicos. Os nulos técnicos somam 5.246 votos no 1º turno, dados ao candidato nº 28 (Leonardo Alves de Araujo, renúncia).",
+    "brancos": "QT_VOTOS_BRANCOS.",
+    "total_votos": "válidos + brancos + nulos (= comparecimento, porque não há votos anulados).",
+    "pct_validos": "Percentual calculado sobre votos válidos: votos do candidato / válidos × 100, com 2 casas.",
+    "pct_brancos_pct_nulos": "Percentual sobre o total de votos (comparecimento), como no relatório do TSE.",
+    "taxa_comparecimento": "comparecimento / (comparecimento + abstenção) × 100, padrão TSE.",
+    "taxa_abstencao": "abstenção / (comparecimento + abstenção) × 100, padrão TSE.",
+    "denominador_das_taxas": "comparecimento + abstenção = aptos nas seções que funcionaram. As taxas somam 100%. Em todos os níveis, são calculadas a partir das somas, nunca como média de taxas.",
+    "aptos_diferente_de_comparecimento_mais_abstencao": "aptos − comparecimento − abstenção = 423, os eleitores das 41 seções não instaladas (todas no exterior, por terem menos de 30 eleitores). O TSE não os conta como abstenção.",
+    "sem_comparecimento": "Em exterior_pais.json, true quando o comparecimento do turno é 0. São cidades com eleitores aptos e nenhum votante (seção não instalada ou ninguém votou). Elas são mantidas no dataset.",
+    "iso3": "ISO3 granular do lugar (GUF, HKG, TWN, PSE são próprios).",
+    "iso3_agregacao": "Sugestão para malhas sem esses polígonos: GUF→FRA, HKG→CHN, TWN→TWN, PSE→PSE. A decisão final fica para o front-end.",
+    "confianca": "'baixa' = país não confirmado pelo endereço do local de votação (ver cidades_baixa_confianca).",
+    "percentuais_nulos": "Taxas e percentuais são null quando o denominador é 0."
+  },
+  "aptos": {
+    "nos_arquivos": 158745502,
+    "efetivo": 158745463,
+    "rodape": "Eleitorado apto: 158.745.502 nos arquivos do TSE. O total efetivo é 158.745.463 porque, segundo o portal do TSE, 39 registros estão duplicados por transferência temporária. Os dados usam a soma dos arquivos para que UF e município somem ao total nacional."
+  },
+  "candidatos": [
+    {
+      "nr": "22",
+      "nome_urna": "FLAVIO BOLSONARO",
+      "nome": "FLAVIO NANTES BOLSONARO",
+      "partido": "PL",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "2º TURNO",
+      "situacao_2t": "NÃO ELEITO"
+    },
+    {
+      "nr": "13",
+      "nome_urna": "LULA",
+      "nome": "LUIZ INÁCIO LULA DA SILVA",
+      "partido": "PT",
+      "coligacao": "BRASIL PRONTO PRA MAIS",
+      "situacao_1t": "2º TURNO",
+      "situacao_2t": "ELEITO"
+    },
+    {
+      "nr": "70",
+      "nome_urna": "ESCRITOR AUGUSTO CURY",
+      "nome": "AUGUSTO JORGE CURY",
+      "partido": "AVANTE",
+      "coligacao": "BRASIL DOS NOSSOS SONHOS",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    },
+    {
+      "nr": "14",
+      "nome_urna": "RENAN SANTOS",
+      "nome": "RENAN ANTONIO FERREIRA DOS SANTOS",
+      "partido": "MISSÃO",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    },
+    {
+      "nr": "55",
+      "nome_urna": "RONALDO CAIADO",
+      "nome": "RONALDO RAMOS CAIADO",
+      "partido": "PSD",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    },
+    {
+      "nr": "30",
+      "nome_urna": "ZEMA",
+      "nome": "ROMEU ZEMA NETO",
+      "partido": "NOVO",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    },
+    {
+      "nr": "80",
+      "nome_urna": "SAMARA",
+      "nome": "SAMARA MARTINS DA SILVA FEITOSA",
+      "partido": "UP",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    },
+    {
+      "nr": "16",
+      "nome_urna": "HERTZ DIAS",
+      "nome": "HERTZ DA CONCEICAO DIAS",
+      "partido": "PSTU",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    },
+    {
+      "nr": "27",
+      "nome_urna": "CLARIANA BARAO",
+      "nome": "CLARIANA ZACARKIM BARAO",
+      "partido": "DC",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    },
+    {
+      "nr": "21",
+      "nome_urna": "EDMILSON COSTA",
+      "nome": "EDMILSON SILVA COSTA",
+      "partido": "PCB",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    },
+    {
+      "nr": "35",
+      "nome_urna": "VETERINÁRIO WILSON GRASSI",
+      "nome": "WILSON GRASSI JUNIOR",
+      "partido": "DEMOCRATA",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    },
+    {
+      "nr": "29",
+      "nome_urna": "RUI COSTA PIMENTA",
+      "nome": "RUI COSTA PIMENTA",
+      "partido": "PCO",
+      "coligacao": "PARTIDO ISOLADO",
+      "situacao_1t": "NÃO ELEITO",
+      "situacao_2t": null
+    }
+  ],
+  "ordem_candidatos": {
+    "1": [
+      "22",
+      "13",
+      "70",
+      "14",
+      "55",
+      "30",
+      "80",
+      "16",
+      "27",
+      "21",
+      "35",
+      "29"
+    ],
+    "2": [
+      "13",
+      "22"
+    ]
+  },
+  "cidades_baixa_confianca": [
+    {
+      "cidade": "CHUY",
+      "iso3": "URY",
+      "motivo": "sem linha na seção (0 comparecimento); Chuy (Uruguai) x Chuí (RS); assumido o lado uruguaio por estar em ZZ"
+    },
+    {
+      "cidade": "SAINT JOHNS",
+      "iso3": "ATG",
+      "motivo": "sem linha na seção (0 comparecimento); St. John's em Antígua ou no Canadá; assumida Antígua (embaixada brasileira)"
+    },
+    {
+      "cidade": "ST GEORGES DE LOYAPOCK",
+      "iso3": "GUF",
+      "motivo": "sem linha na seção (0 comparecimento); Saint-Georges-de-l'Oyapock, território ultramarino da França"
+    },
+    {
+      "cidade": "TRÍPOLI",
+      "iso3": "LBY",
+      "motivo": "confirmado pelo local de votação na seção (fase3/evidencia_locais_exterior.csv): Embaixada do Brasil em TÚNIS, Tunísia — a seção de Trípoli (Líbia) funcionou em Túnis; país do eleitorado = LBY, local físico = TUN"
+    }
+  ],
+  "validacoes": [
+    "soma de uf.json = nacional.json (turnos 1 e 2, todas as contagens e votos por candidato)",
+    "soma de municipio.json + exterior_pais.json = nacional.json",
+    "nacional.json = Relatório Resultado da Totalização do TSE (PDF), Brasil e exterior; e cada UF conferida no PDF",
+    "em cada município: soma dos candidatos = válidos; total = válidos + brancos + nulos = comparecimento",
+    "soma de cada municipio/<UF>.json = a UF em uf.json",
+    "malhas: todo cd_ibge de municipio.json tem polígono na malha do IBGE e vice-versa (fora as 2 lagoas do RS)",
+    "malhas: em cada UF, área da UF = soma das áreas dos municípios depois da simplificação (topologia mantida)",
+    "malhas: todo iso3 de exterior_pais.json tem polígono ou ponto na malha mundial"
+  ],
+  "arquivos": {
+    "nacional.json": {
+      "bytes": 898,
+      "bytes_gzip": 439
+    },
+    "uf.json": {
+      "bytes": 23334,
+      "bytes_gzip": 6316
+    },
+    "municipio.json": {
+      "bytes": 4444747,
+      "bytes_gzip": 870681
+    },
+    "exterior_pais.json": {
+      "bytes": 263383,
+      "bytes_gzip": 29141
+    },
+    "municipio/AC.json": {
+      "bytes": 17665,
+      "bytes_gzip": 4228
+    },
+    "municipio/AL.json": {
+      "bytes": 81638,
+      "bytes_gzip": 16931
+    },
+    "municipio/AM.json": {
+      "bytes": 49529,
+      "bytes_gzip": 10510
+    },
+    "municipio/AP.json": {
+      "bytes": 12805,
+      "bytes_gzip": 3174
+    },
+    "municipio/BA.json": {
+      "bytes": 333788,
+      "bytes_gzip": 66156
+    },
+    "municipio/CE.json": {
+      "bytes": 147617,
+      "bytes_gzip": 30011
+    },
+    "municipio/DF.json": {
+      "bytes": 908,
+      "bytes_gzip": 456
+    },
+    "municipio/ES.json": {
+      "bytes": 62963,
+      "bytes_gzip": 13725
+    },
+    "municipio/GO.json": {
+      "bytes": 195647,
+      "bytes_gzip": 37825
+    },
+    "municipio/MA.json": {
+      "bytes": 173919,
+      "bytes_gzip": 34799
+    },
+    "municipio/MG.json": {
+      "bytes": 679930,
+      "bytes_gzip": 135271
+    },
+    "municipio/MS.json": {
+      "bytes": 63088,
+      "bytes_gzip": 13253
+    },
+    "municipio/MT.json": {
+      "bytes": 113013,
+      "bytes_gzip": 22638
+    },
+    "municipio/PA.json": {
+      "bytes": 115950,
+      "bytes_gzip": 24111
+    },
+    "municipio/PB.json": {
+      "bytes": 176811,
+      "bytes_gzip": 34477
+    },
+    "municipio/PE.json": {
+      "bytes": 148613,
+      "bytes_gzip": 30387
+    },
+    "municipio/PI.json": {
+      "bytes": 177851,
+      "bytes_gzip": 34209
+    },
+    "municipio/PR.json": {
+      "bytes": 317754,
+      "bytes_gzip": 62685
+    },
+    "municipio/RJ.json": {
+      "bytes": 75195,
+      "bytes_gzip": 16733
+    },
+    "municipio/RN.json": {
+      "bytes": 132597,
+      "bytes_gzip": 26157
+    },
+    "municipio/RO.json": {
+      "bytes": 41527,
+      "bytes_gzip": 8783
+    },
+    "municipio/RR.json": {
+      "bytes": 11944,
+      "bytes_gzip": 2903
+    },
+    "municipio/RS.json": {
+      "bytes": 394291,
+      "bytes_gzip": 77170
+    },
+    "municipio/SC.json": {
+      "bytes": 234470,
+      "bytes_gzip": 46405
+    },
+    "municipio/SE.json": {
+      "bytes": 60041,
+      "bytes_gzip": 12652
+    },
+    "municipio/SP.json": {
+      "bytes": 516523,
+      "bytes_gzip": 104374
+    },
+    "municipio/TO.json": {
+      "bytes": 109891,
+      "bytes_gzip": 20549
+    },
+    "malhas/br_uf.json": {
+      "bytes": 762934,
+      "bytes_gzip": 88854
+    },
+    "malhas/mundo.json": {
+      "bytes": 706631,
+      "bytes_gzip": 216534
+    },
+    "malhas/municipios/AC.json": {
+      "bytes": 88507,
+      "bytes_gzip": 21631
+    },
+    "malhas/municipios/AL.json": {
+      "bytes": 68812,
+      "bytes_gzip": 20796
+    },
+    "malhas/municipios/AM.json": {
+      "bytes": 505221,
+      "bytes_gzip": 87465
+    },
+    "malhas/municipios/AP.json": {
+      "bytes": 99157,
+      "bytes_gzip": 24343
+    },
+    "malhas/municipios/BA.json": {
+      "bytes": 581417,
+      "bytes_gzip": 125582
+    },
+    "malhas/municipios/CE.json": {
+      "bytes": 217279,
+      "bytes_gzip": 56634
+    },
+    "malhas/municipios/DF.json": {
+      "bytes": 4511,
+      "bytes_gzip": 1755
+    },
+    "malhas/municipios/ES.json": {
+      "bytes": 118155,
+      "bytes_gzip": 27494
+    },
+    "malhas/municipios/GO.json": {
+      "bytes": 541601,
+      "bytes_gzip": 118005
+    },
+    "malhas/municipios/MA.json": {
+      "bytes": 331323,
+      "bytes_gzip": 77029
+    },
+    "malhas/municipios/MG.json": {
+      "bytes": 1223647,
+      "bytes_gzip": 248491
+    },
+    "malhas/municipios/MS.json": {
+      "bytes": 281180,
+      "bytes_gzip": 62678
+    },
+    "malhas/municipios/MT.json": {
+      "bytes": 583722,
+      "bytes_gzip": 111831
+    },
+    "malhas/municipios/PA.json": {
+      "bytes": 420140,
+      "bytes_gzip": 85158
+    },
+    "malhas/municipios/PB.json": {
+      "bytes": 164104,
+      "bytes_gzip": 46271
+    },
+    "malhas/municipios/PE.json": {
+      "bytes": 157032,
+      "bytes_gzip": 39140
+    },
+    "malhas/municipios/PI.json": {
+      "bytes": 182728,
+      "bytes_gzip": 49084
+    },
+    "malhas/municipios/PR.json": {
+      "bytes": 548375,
+      "bytes_gzip": 133593
+    },
+    "malhas/municipios/RJ.json": {
+      "bytes": 142463,
+      "bytes_gzip": 38566
+    },
+    "malhas/municipios/RN.json": {
+      "bytes": 92088,
+      "bytes_gzip": 27755
+    },
+    "malhas/municipios/RO.json": {
+      "bytes": 153749,
+      "bytes_gzip": 37016
+    },
+    "malhas/municipios/RR.json": {
+      "bytes": 109511,
+      "bytes_gzip": 25988
+    },
+    "malhas/municipios/RS.json": {
+      "bytes": 609232,
+      "bytes_gzip": 143359
+    },
+    "malhas/municipios/SC.json": {
+      "bytes": 351825,
+      "bytes_gzip": 89653
+    },
+    "malhas/municipios/SE.json": {
+      "bytes": 70369,
+      "bytes_gzip": 20764
+    },
+    "malhas/municipios/SP.json": {
+      "bytes": 716081,
+      "bytes_gzip": 164064
+    },
+    "malhas/municipios/TO.json": {
+      "bytes": 348795,
+      "bytes_gzip": 78640
+    },
+    "municipio/indice.json": {
+      "bytes": 366084,
+      "bytes_gzip": 78575
+    }
+  }
+}
