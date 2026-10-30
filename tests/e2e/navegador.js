@@ -60,6 +60,7 @@ export async function navegador() {
 
   const api = {
     erros,
+    cmd,   // acesso direto ao DevTools Protocol (ex.: mouseMoved para hover)
     async largura(w, h = 900) {
       await cmd('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: w < 768 });
     },
@@ -90,8 +91,11 @@ export async function navegador() {
     },
     /** Clique real do mouse no centro do elemento (rolagem instantânea antes de medir). */
     async clica(seletor) {
-      const p = await api.js(`(() => { const e = document.querySelector(${JSON.stringify(seletor)});
+      // rola até o elemento, espera dois quadros (eventos de ponteiro e layout da rolagem) e só então mede
+      const p = await api.js(`(async () => { const e = document.querySelector(${JSON.stringify(seletor)});
         e.scrollIntoView({ block: 'center', behavior: 'instant' });
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await new Promise((r) => setTimeout(r, 150));
         const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
       for (const type of ['mousePressed', 'mouseReleased']) {
         await cmd('Input.dispatchMouseEvent', { type, x: p[0], y: p[1], button: 'left', clickCount: 1 });

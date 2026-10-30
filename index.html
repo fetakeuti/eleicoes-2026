@@ -144,7 +144,32 @@
         <h2 id="h-ext" class="titulo-secao">Como votaram os brasileiros no exterior</h2>
         <p class="linha-fina">Por país, com as cidades onde houve seção eleitoral.</p>
       </div>
-      <div class="em-obra">O mapa-múndi entra na Fase D.</div>
+      <div class="controles controles--mapa">
+        <div class="campo"><span class="rotulo" id="rot-eturno">Turno</span>
+          <div class="segmentado" role="group" aria-labelledby="rot-eturno" data-slot="eTurno"></div></div>
+        <div class="campo"><span class="rotulo" id="rot-emet">Métrica</span>
+          <div class="segmentado" role="group" aria-labelledby="rot-emet" data-slot="eMetrica"></div></div>
+        <div class="campo campo--busca" data-slot="eBusca"></div>
+      </div>
+      <div class="mapa-layout">
+        <div class="mapa-col">
+          <div class="mapa-caixa mapa-caixa--mundo" data-slot="eCaixa">
+            <div class="mapa-estado" data-slot="eEstado" role="status" aria-live="polite"></div>
+            <svg class="mapa-svg mapa-svg--mundo" data-slot="eSvg" role="group" aria-label="Mapa-múndi do voto no exterior"></svg>
+            <div class="tooltip tooltip--ext" data-slot="eTooltip" role="tooltip" hidden></div>
+          </div>
+          <div class="legenda" data-slot="eLegenda"></div>
+          <p class="nota-mapa">O mapa não expressa posição sobre fronteiras. Nomes de países como no TSE.</p>
+        </div>
+        <aside class="lado" aria-label="Detalhe e lista de países">
+          <div class="detalhe detalhe--ext" data-slot="eDetalhe" aria-live="polite"></div>
+          <div class="ranking">
+            <div class="ranking__cab"><span class="rotulo" data-slot="eRankTitulo">Países</span><span class="rotulo" data-slot="eRankUnid"></span></div>
+            <div class="pilulas" role="group" aria-label="Ordem da lista de países" data-slot="eOrdem"></div>
+            <div class="ranking__lista ranking__lista--longa" data-slot="eLista"></div>
+          </div>
+        </aside>
+      </div>
     </div>
   </section>
 

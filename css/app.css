@@ -268,6 +268,30 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .ranking__lista .barra.amostra-hachura { width: 100%; }
 .ranking__lista .valor { text-align: right; font-weight: var(--peso-semi); white-space: nowrap; }
 
+/* ---------- Mapa-múndi ---------- */
+.mapa-svg--mundo { aspect-ratio: 1000 / 486; max-height: none; }
+.mapa-svg .forma--pais { stroke-width: .5; }
+.mapa-svg .forma--pais.sem-eleitorado { cursor: default; pointer-events: none; }
+.mapa-svg .forma--circulo { stroke: var(--mapa-borda); stroke-width: .5; fill-opacity: .85; }
+.mapa-svg--mundo .forma--ponto { stroke: var(--mapa-destaque-linha); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.tooltip--ext { max-width: 340px; background: var(--cor-painel); color: var(--cor-tinta); border: 1px solid var(--cor-tinta); gap: var(--esp-1); }
+.tooltip--ext .tooltip__titulo { font-size: var(--tx-corpo); }
+.tooltip--ext .aviso { display: block; }
+.tooltip__cidades { margin: var(--esp-1) 0 0; padding: var(--esp-1) 0 0; list-style: none; border-top: 1px solid var(--cor-linha-fraca); }
+.tooltip__cidades li { display: flex; justify-content: space-between; gap: var(--esp-3); }
+.detalhe__cidades { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; font-size: var(--tx-legenda); }
+.detalhe__cidades li { display: flex; flex-direction: column; padding: var(--esp-1) 0; border-bottom: 1px solid var(--cor-linha-fraca); }
+.detalhe__cidades span { color: var(--cor-texto-2); }
+.detalhe--ext { height: 480px; min-height: 0; overflow-y: auto; }   /* altura fixa: com 1 a 11 cidades e avisos variáveis,
+   um painel elástico empurraria a lista de países para baixo do ponteiro a cada hover */
+.legenda__circulos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--esp-2) var(--esp-5); font-size: var(--tx-legenda); }
+.legenda__circulos span { display: inline-flex; align-items: center; gap: var(--esp-2); }
+.legenda__circulos i { display: inline-block; width: 10px; height: 10px; border-radius: var(--raio-ponto); }
+.amostra-circulo { fill: none; stroke: var(--cor-tinta); stroke-width: 1; }
+.amostra-sem-eleitorado { background: var(--mapa-sem-eleitorado); }
+.amostra-sem-eleitorado.amostra-neutro { background: var(--mapa-neutro); }
+.nota-mapa { margin: 0; font-size: var(--tx-legenda); color: var(--cor-apoio); }
+
 /* ---------- Brancos e nulos ---------- */
 .kpis--bn { border-bottom: 1px solid var(--cor-tinta); padding-bottom: var(--esp-5); }
 /* colunas: rótulo | trilho 0–5% | valor | variação. O trilho tem largura fixa no eixo, e o valor nunca quebra. */
@@ -303,6 +327,7 @@ body.carregando-dados [data-slot] { min-height: 0; }
   .tabela-cand .linha { grid-template-columns: 150px minmax(140px, 1fr) 96px 96px 118px; column-gap: var(--esp-4); }
   .eixo { white-space: nowrap; }
   .tabela-part { min-width: 0; }
+  .detalhe--ext { height: auto; overflow-y: visible; }   /* abaixo de 1200 px o painel não fica acima da lista */
   .lado { flex-direction: row; flex-wrap: wrap; }
   .lado > * { flex: 1 1 320px; }
   .tabela-part .linha { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 130px; column-gap: var(--esp-4); }

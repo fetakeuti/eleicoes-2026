@@ -1,5 +1,6 @@
-/* Campo de busca de município (HANDOFF §3): input 44 px com label visível, sugestões a partir de 2 letras
-   (até 6), role="listbox", setas + Enter, Esc fecha. O índice (municipio/indice.json) carrega no primeiro foco. */
+/* Campo de busca (HANDOFF §3): input 44 px com label visível, sugestões a partir de 2 letras (até 6),
+   role="listbox", setas + Enter, Esc fecha. O índice carrega no primeiro foco.
+   Padrão: município (municipio/indice.json). O exterior passa `opcoes` para buscar país e cidade. */
 
 import { esc, lerJSON } from '../comum.js';
 import { inteiro } from '../formato.js';
@@ -7,13 +8,23 @@ import { preparaIndice, busca } from './busca.js';
 
 let n = 0;
 
-export function iniciarBusca(alvo, aoEscolher) {
+const MUNICIPIO = {
+  rotulo: 'Buscar município',
+  exemplo: 'Ex.: Xique-Xique',
+  indice: () => lerJSON('municipio/indice.json').then((d) => preparaIndice(d.municipios)),
+  linha: (m) => `<b>${esc(m.nome)}</b><span>${m.uf} · ${inteiro(m.aptos)} eleitores${m.nome_tse ? ` · no TSE: ${esc(m.nome_tse)}` : ''}</span>`,
+  escolhido: (m) => `${m.nome} (${m.uf})`,
+  vazio: 'Nenhum município com esse nome. Confira a grafia ou tente só o começo do nome.',
+};
+
+export function iniciarBusca(alvo, aoEscolher, opcoes = MUNICIPIO) {
+  const o = { ...MUNICIPIO, ...opcoes };
   const id = `busca-${++n}`;
-  alvo.innerHTML = `<label class="rotulo" for="${id}">Buscar município</label>
+  alvo.innerHTML = `<label class="rotulo" for="${id}">${esc(o.rotulo)}</label>
     <div class="busca">
-      <input id="${id}" type="search" autocomplete="off" spellcheck="false" placeholder="Ex.: Xique-Xique"
+      <input id="${id}" type="search" autocomplete="off" spellcheck="false" placeholder="${esc(o.exemplo)}"
         role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-lista">
-      <ul id="${id}-lista" class="busca__lista" role="listbox" aria-label="Municípios encontrados" hidden></ul>
+      <ul id="${id}-lista" class="busca__lista" role="listbox" aria-label="Resultados da busca" hidden></ul>
       <p class="busca__vazio" role="status" aria-live="polite"></p>
     </div>`;
   const input = alvo.querySelector('input');
@@ -25,7 +36,7 @@ export function iniciarBusca(alvo, aoEscolher) {
 
   const carrega = () => {
     if (!indice) {
-      indice = lerJSON('municipio/indice.json').then((d) => preparaIndice(d.municipios));
+      indice = o.indice();
       indice.catch(() => { indice = null; });
     }
     return indice;
@@ -45,9 +56,9 @@ export function iniciarBusca(alvo, aoEscolher) {
   const escolhe = (i) => {
     const m = achados[i];
     if (!m) return;
-    input.value = `${m.nome} (${m.uf})`;
+    input.value = o.escolhido(m);
     fecha();
-    status.textContent = `${m.nome}, ${m.uf}, selecionado no mapa.`;
+    status.textContent = `${o.escolhido(m)}: selecionado no mapa.`;
     aoEscolher(m);
   };
   const atualiza = async () => {
@@ -58,18 +69,17 @@ export function iniciarBusca(alvo, aoEscolher) {
     try {
       ind = await carrega();
     } catch {
-      status.textContent = 'Não foi possível carregar a lista de municípios. Tente de novo.';
+      status.textContent = 'Não foi possível carregar a lista para a busca. Tente de novo.';
       return;
     }
     if (input.value !== texto) return;   // o usuário continuou digitando
     achados = busca(ind, texto);
     if (!achados.length) {
       fecha();
-      status.textContent = 'Nenhum município com esse nome. Confira a grafia ou tente só o começo do nome.';
+      status.textContent = o.vazio;
       return;
     }
-    lista.innerHTML = achados.map((m, i) => `<li id="${id}-op-${i}" role="option" aria-selected="false" data-i="${i}">
-      <b>${esc(m.nome)}</b><span>${m.uf} · ${inteiro(m.aptos)} eleitores${m.nome_tse ? ` · no TSE: ${esc(m.nome_tse)}` : ''}</span></li>`).join('');
+    lista.innerHTML = achados.map((m, i) => `<li id="${id}-op-${i}" role="option" aria-selected="false" data-i="${i}">${o.linha(m)}</li>`).join('');
     lista.hidden = false;
     input.setAttribute('aria-expanded', 'true');
     marca(-1);
