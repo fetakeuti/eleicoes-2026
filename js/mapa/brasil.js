@@ -11,14 +11,16 @@ import { lerHash, escreverHash, corrige, mudouNivel, PADRAO, RECORTES } from './
 import { iniciarBusca } from './busca-ui.js';
 import { ligaLista, desenhaLista, chaveEmFoco as focoEm } from './lista.js';
 import { renderRecortes } from './recortes.js';
+import { criaZoom } from './zoom.js';
+import { criaFolha, criaAbas, ehMobile } from './folha.js';
 
 const W = 800, H = 720;
 const MIN_PX2 = 6;                    // município com bbox menor que isso na tela vira ponto (HANDOFF §4.2)
-const ESCURAS = /rampa-(13|22|demais)-[45]|abst-br-[56]|div-(margem|abst)-[1278]\b|virou-/;
 
 let D;                                // { meta, nacional, ufs }
 let est = { ...PADRAO };
-const ui = { hov: null, ordem: 'a', carregandoUF: null, erroUF: null };
+const ui = { hov: null, toque: null, ordem: 'a', carregandoUF: null, erroUF: null };
+let zoomCtl, folha;
 let proj, caminho, svg, gZoom, camadas, k = 1;
 let primeiraVez = true;
 const ufPorSigla = new Map();
@@ -79,6 +81,7 @@ async function aplica(novo, historico = true) {
   }
   est = novo;
   if (!historico && slot('mRanking').contains(document.activeElement)) document.activeElement.blur();   // ver exterior.js
+  if (ufMudou && folha?.aberta) folha.fecha();
   ui.hov = null;
   sincronizaControles();
   if (ufMudou) await trocaNivel();
@@ -102,14 +105,14 @@ async function trocaNivel() {
   if (!nivelMun.has(uf)) {
     ui.carregandoUF = uf;
     pinta();   // UF em cinza claro enquanto carrega
-    mostraEstado('carregando', `Carregando os municípios de ${ufPorSigla.get(uf).nome}…`, 0.1);
+    mostraEstado('carregando', `Carregando os municípios · ${ufPorSigla.get(uf).nome}…`, 0.1);
     try {
       let feitos = 0;
       // o progresso só avança enquanto esta carga estiver de pé: se um arquivo falhar, o outro não pode
       // chegar depois e escrever "Carregando…" por cima da mensagem de erro
       const passo = (x) => {
         feitos += 1;
-        if (ui.carregandoUF === uf) mostraEstado('carregando', `Carregando os municípios de ${ufPorSigla.get(uf).nome}…`, 0.1 + 0.45 * feitos);
+        if (ui.carregandoUF === uf) mostraEstado('carregando', `Carregando os municípios · ${ufPorSigla.get(uf).nome}…`, 0.1 + 0.45 * feitos);
         return x;
       };
       const [dados, topo] = await Promise.all([lerJSON(`municipio/${uf}.json`).then(passo), lerJSON(`malhas/municipios/${uf}.json`).then(passo)]);
@@ -122,7 +125,7 @@ async function trocaNivel() {
     } catch (err) {
       ui.carregandoUF = null;
       ui.erroUF = uf;
-      mostraEstado('erro', `Não foi possível carregar os municípios de ${ufPorSigla.get(uf).nome} (${err.message}). O mapa por UF continua disponível.`,
+      mostraEstado('erro', `Não foi possível carregar os municípios · ${ufPorSigla.get(uf).nome} (${err.message}). O mapa por UF continua disponível.`,
         null, () => trocaNivel().then(pinta));
       return;
     }
@@ -163,6 +166,13 @@ function montaSVG(feats) {
     .attr('transform', (f) => `translate(${caminho.centroid(f)})`).attr('dy', '0.35em').attr('text-anchor', 'middle')
     .attr('data-chave', (f) => f.properties.uf).text((f) => f.properties.uf);
   ligaEventos(slot('mSvg'));
+  zoomCtl = criaZoom({
+    svg: slot('mSvg'), g: gZoom, largura: W, altura: H, kMax: 8, rotulo: 'mapa do Brasil',
+    aoMudar: (tr) => { k = tr.k; slot('mTooltip').hidden = true; },
+    aoTerminar: () => { if (est.uf && nivelMun.has(est.uf)) desenhaPontos(est.uf); },
+  });
+  folha = criaFolha({ rotulo: 'Detalhe do mapa do Brasil', aoFechar: () => { ui.toque = null; desenhaDestaque(); } });
+  criaAbas(document.querySelector('#mapa .mapa-layout'), () => folha.fecha());
   new ResizeObserver(() => { if (est.uf && nivelMun.has(est.uf)) desenhaPontos(est.uf); }).observe(slot('mSvg'));
 }
 
@@ -191,7 +201,7 @@ function desenhaPontos(uf) {
   g.attr('transform', (f) => `translate(${caminho.centroid(f)})`);
   g.select('.forma--ponto').attr('r', 3.5 / Math.sqrt(k));
   g.select('.ponto__alvo').attr('r', 12 / kTela).attr('data-chave', (f) => f.properties.cd_ibge);
-  pinta();
+  pinta({ soFormas: true });
 }
 
 /** Enquadra a UF (ou o Brasil, com null), com transição; as bordas não engrossam (vector-effect). */
@@ -201,13 +211,8 @@ function enquadra(f) {
     const [[x0, y0], [x1, y1]] = caminho.bounds(f);
     k = Math.min(24, 0.9 / Math.max((x1 - x0) / W, (y1 - y0) / H));
     t = d3.zoomIdentity.translate(W / 2, H / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
-  } else {
-    k = 1;
   }
-  const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  gZoom.transition().duration(reduzido ? 0 : 450).attr('transform', t.toString())
-    .on('end', () => { if (est.uf && nivelMun.has(est.uf)) desenhaPontos(est.uf); });
-  gZoom.style('--k', k);
+  zoomCtl.enquadra(t);   // o zoom (botões e pinça) parte deste enquadramento; "enquadrar" volta a ele
 }
 
 // ------------------------------------------------------------------ dados de cada forma
@@ -240,7 +245,10 @@ const val = (u) => (u.turnos ? valor(u.turnos, est, D.meta.ordem_candidatos) : V
 const nomeCand = (nr) => candidato(D.meta, nr).nome_urna;
 
 // ------------------------------------------------------------------ pintura (só atributos)
-function pinta() {
+/** Pinta formas e legenda; com `soFormas`, não redesenha ranking, painel, trilha nem faixa do exterior.
+    O fim de um zoom só repinta as formas: redesenhar o ranking nessa hora trocava o nó da linha entre o
+    pressionar e o soltar do mouse, e o clique se perdia. */
+function pinta({ soFormas = false } = {}) {
   if (!camadas) return;
   const nivel = nivelAtual();
   const especiais = new Set();
@@ -260,7 +268,6 @@ function pinta() {
       this.setAttribute('aria-label', `${u.nome}${SUFIXO_RECORTE[est.rec]}: ${r.txt}`);
       if (r.especial === 'vazio') this.setAttribute('aria-disabled', 'true'); else this.removeAttribute('aria-disabled');
     }
-    this.__escura = ESCURAS.test(r.cor || '');
   });
   preenche(camadas.ufs.selectAll('path'), true);
   camadas.ufs.selectAll('path')
@@ -268,8 +275,7 @@ function pinta() {
     .classed('carregando', (f) => f.properties.uf === ui.carregandoUF)
     .classed('sob-municipios', (f) => nivel === 'mun' && f.properties.uf === est.uf)
     .attr('tabindex', nivel === 'mun' ? -1 : 0);
-  camadas.siglas.style('display', nivel === 'mun' ? 'none' : null).selectAll('text')
-    .classed('sobre-escuro', function () { return camadas.ufs.select(`[data-chave="${this.dataset.chave}"]`).node().__escura; });
+  camadas.siglas.style('display', nivel === 'mun' ? 'none' : null);   // siglas com halo: legíveis sobre qualquer cor
   if (nivel === 'mun') {
     preenche(camadas.mun.selectAll('path'), false);
     preenche(camadas.pontos.selectAll('.forma--ponto'), false);
@@ -282,6 +288,7 @@ function pinta() {
 
   desenhaDestaque();
   renderLegenda(especiais);
+  if (soFormas) return;
   renderRanking();
   renderDetalhe();
   renderTrilha();
@@ -300,7 +307,8 @@ function desenhaDestaque() {
   const sel = nivelAtual() === 'mun' ? est.mun : null;
   const itens = [];
   if (sel !== null) itens.push({ chave: sel, larg: 2.5 });
-  if (ui.hov !== null && String(ui.hov) !== String(sel)) itens.push({ chave: ui.hov, larg: 2 });
+  if (ui.toque !== null && String(ui.toque) !== String(sel)) itens.push({ chave: ui.toque, larg: 2.5 });
+  if (ui.hov !== null && String(ui.hov) !== String(sel) && String(ui.hov) !== String(ui.toque)) itens.push({ chave: ui.hov, larg: 2 });
   const dados = itens.map((i) => ({ ...i, el: formaDe(i.chave) })).filter((i) => i.el);
   const g = camadas.destaque.selectAll('g').data(dados).join((e) => {
     const n = e.append('g');
@@ -358,8 +366,11 @@ function hover(chave, alvo) {
   posicionaTooltip(c, alvo);
 }
 
-/** Clique: UF → drill-down; município → fixa (clicar de novo solta). */
+/** Clique: UF → drill-down; município → fixa (clicar de novo solta).
+    No mobile (< 768 px) o toque abre a folha inferior: na UF, com o resumo e o botão "Ver municípios"
+    (o drill-down só acontece pelo botão, D47); no município, fixa e mostra o detalhe. */
 function escolhe(chave) {
+  if (ehMobile()) { escolheMobile(chave); return; }
   if (ufPorSigla.has(chave)) {
     if (chave === est.uf) return;
     if (!unidade(chave).turnos) return;   // sem municípios neste recorte (DF em "Não capitais"): sem drill-down
@@ -369,6 +380,27 @@ function escolhe(chave) {
   const cd = Number(chave);
   if (unidade(cd)?.fora) return;
   aplica({ ...est, mun: est.mun === cd ? null : cd });
+}
+
+async function escolheMobile(chave) {
+  const ehUF = ufPorSigla.has(chave);
+  if (ehUF && chave !== est.uf) {
+    ui.toque = chave;
+    desenhaDestaque();
+    abreFolha(chave);
+    return;
+  }
+  const cd = Number(chave);
+  if (ehUF || unidade(cd)?.fora) return;
+  ui.toque = null;
+  if (est.mun !== cd) await aplica({ ...est, mun: cd });
+  abreFolha(cd);
+}
+
+function abreFolha(chave) {
+  folha.abre(htmlDetalhe(chave, true), formaDe(chave));
+  const bv = folha.corpo.querySelector('[data-ver]');
+  if (bv) bv.onclick = () => { folha.fecha(); aplica({ ...est, uf: bv.dataset.ver, mun: null }); };
 }
 
 // ------------------------------------------------------------------ tooltip (desktop)
@@ -475,7 +507,7 @@ function renderRanking() {
   const lista = ordens(est.met);
   if (!lista.some(([id]) => id === ui.ordem)) ui.ordem = 'a';
   slot('mRankTitulo').textContent = (nivel === 'mun'
-    ? `Municípios de ${ufPorSigla.get(est.uf).nome} (${inteiro(itens.length)})` : 'Ranking das 27 UFs') + SUFIXO_RECORTE[est.rec];
+    ? `Municípios · ${ufPorSigla.get(est.uf).nome} (${inteiro(itens.length)})` : 'Ranking das 27 UFs') + SUFIXO_RECORTE[est.rec];
   slot('mRankUnid').textContent = { venc: 'margem (p.p.)', cand: '% dos válidos', abst: 'abstenção', flip: 'situação', dmarg: 'p.p.', dabst: 'p.p.' }[est.met];
   const po = slot('mOrdem');
   po.innerHTML = lista.map(([id, rot]) => `<button type="button" data-id="${id}" aria-pressed="${id === ui.ordem}">${rot}</button>`).join('');
@@ -489,7 +521,7 @@ function renderRanking() {
   rk.setAttribute('aria-label', `${slot('mRankTitulo').textContent}. Use as setas para percorrer a lista.`);
   desenhaLista(rk, ord.map((x, i) => {
     const largura = x.val.especial ? 0 : Math.max(2, Math.min(100, (x.val.mag / max) * 100));
-    const fundo = x.val.especial === 'sem' ? 'class="barra amostra-hachura"' : `class="barra" style="width:${largura.toFixed(1)}%;background:${x.val.cor}"`;
+    const fundo = x.val.especial === 'sem' ? 'class="rank-barra amostra-hachura"' : `class="rank-barra" style="width:${largura.toFixed(1)}%;background:${x.val.cor}"`;
     return { chave: x.chave, rotulo: `${esc(x.nome)}: ${esc(x.val.txt)}`,
       html: `<span class="pos num">${i + 1}</span><b>${esc(nivel === 'mun' ? x.nome : x.chave)}</b>
       <span class="trilho-rank"><span ${fundo}></span></span><span class="num valor">${esc(x.val.txt)}</span>` };
@@ -506,13 +538,23 @@ function marcaRanking() {
 
 function renderDetalhe() {
   const nivel = nivelAtual();
-  const foco = ui.hov ?? (nivel === 'mun' ? est.mun : null);
+  const alvo = slot('mDetalhe');
+  alvo.classList.toggle('detalhe--t1', est.turno === '1');
+  alvo.innerHTML = htmlDetalhe(ui.hov ?? (nivel === 'mun' ? est.mun : null), false);
+  const bv = alvo.querySelector('[data-ver]');
+  if (bv.dataset.ver) bv.onclick = () => escolhe(bv.dataset.ver);
+}
+
+/** Conteúdo do painel de detalhe (desktop) ou da folha inferior (mobile, `naFolha`). */
+function htmlDetalhe(foco, naFolha) {
+  const nivel = nivelAtual();
   let u = unidade(foco);
   let nota;
   if (u) {
     const fixado = u.tipo === 'mun' && u.chave === est.mun;
     nota = u.tipo === 'uf' && !u.turnos ? 'Sem municípios neste recorte.'
-      : u.tipo === 'uf' && u.chave !== est.uf ? 'Clique para ver os municípios.' : fixado ? 'Município fixado. Clique de novo para soltar.' : 'Clique para fixar.';
+      : naFolha ? (u.tipo === 'uf' ? '' : 'Município fixado no mapa.')
+        : u.tipo === 'uf' && u.chave !== est.uf ? 'Clique para ver os municípios.' : fixado ? 'Município fixado. Clique de novo para soltar.' : 'Clique para fixar.';
   } else if (nivel === 'mun') {
     u = unidade(est.uf);
     nota = 'Total da UF. Passe o cursor num município para ver os números.';
@@ -555,15 +597,15 @@ function renderDetalhe() {
   if (r?.especial === 'sem') aviso = '<p class="aviso">Sem votantes neste turno.</p>';
   // o botão fica sempre no fluxo (invisível quando não se aplica): a altura do painel não muda no hover,
   // e o ranking logo abaixo não pula sob o cursor
-  const podeVer = u.tipo === 'uf' && u.chave !== est.uf && nivel === 'uf' && !!u.turnos;
-  const ver = `<button type="button" class="botao detalhe__ver" data-ver="${podeVer ? u.chave : ''}"${podeVer ? '' : ' tabindex="-1" aria-hidden="true" style="visibility:hidden"'}>Ver municípios</button>`;
-  slot('mDetalhe').classList.toggle('detalhe--t1', t === '1');
-  slot('mDetalhe').innerHTML = `<div class="detalhe__cab"><span class="detalhe__nome">${esc(u.nome)}</span>
+  const podeVer = u.tipo === 'uf' && u.chave !== est.uf && !!u.turnos && (nivel === 'uf' || naFolha);
+  const ver = naFolha
+    ? (podeVer ? `<button type="button" class="botao botao--primario detalhe__ver" data-ver="${u.chave}">Ver municípios</button>` : '')
+    : `<button type="button" class="botao detalhe__ver" data-ver="${podeVer ? u.chave : ''}"${podeVer ? '' : ' tabindex="-1" aria-hidden="true" style="visibility:hidden"'}>Ver municípios</button>`;
+  const corpo = `<div class="detalhe__cab"><span class="detalhe__nome">${esc(u.nome)}</span>
       <span class="rotulo">${t === 'v' ? '1º → 2º turno' : `${t}º turno`}</span></div>
     ${sub ? `<span class="detalhe__sub">${esc(sub)}</span>` : ''}
-    ${aviso}${h}<p class="detalhe__nota">${nota}</p>${ver}`;
-  const bv = slot('mDetalhe').querySelector('[data-ver]');
-  if (bv.dataset.ver) bv.onclick = () => escolhe(bv.dataset.ver);
+    ${aviso}${h}${nota ? `<p class="detalhe__nota">${nota}</p>` : ''}${ver}`;
+  return naFolha ? `<div class="detalhe detalhe--folha">${corpo}</div>` : corpo;
 }
 
 function renderTrilha() {

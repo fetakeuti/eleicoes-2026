@@ -10,10 +10,12 @@ import { ligaLista, desenhaLista, chaveEmFoco } from '../mapa/lista.js';
 import { iniciarBusca } from '../mapa/busca-ui.js';
 import { preparaIndice } from '../mapa/busca.js';
 import { METRICAS_EXT, PADRAO_EXT, valorExt, avisos, raio, lerHashExt, escreverHashExt } from './regras.js';
+import { criaZoom } from '../mapa/zoom.js';
+import { criaFolha, criaAbas, ehMobile } from '../mapa/folha.js';
 
 const W = 1000;
 let H = 520;
-let D, paises, porIso, proj, caminho, camadas;
+let D, paises, porIso, proj, caminho, camadas, zoomCtl, folha;
 let est = { ...PADRAO_EXT };
 const ui = { hov: null, ordem: 'a', iniciado: false, carregado: false };
 const ancora = new Map();   // iso3 → { x, y, bbox } do maior polígono (ou do ponto): círculo e tooltip
@@ -93,11 +95,12 @@ function montaSVG(topo) {
     .attr('width', 5).attr('height', 5).attr('patternTransform', 'rotate(45)');
   p.append('rect').attr('width', 5).attr('height', 5).attr('class', 'hachura-fundo');
   p.append('line').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 5).attr('class', 'hachura-linha');
+  const gZoom = svg.append('g').attr('class', 'zoom');
   camadas = {
-    paises: svg.append('g').attr('class', 'camada-paises'),
-    circulos: svg.append('g').attr('class', 'camada-circulos'),
-    pontos: svg.append('g').attr('class', 'camada-pontos'),
-    destaque: svg.append('g').attr('class', 'camada-destaque'),
+    paises: gZoom.append('g').attr('class', 'camada-paises'),
+    circulos: gZoom.append('g').attr('class', 'camada-circulos'),
+    pontos: gZoom.append('g').attr('class', 'camada-pontos'),
+    destaque: gZoom.append('g').attr('class', 'camada-destaque'),
   };
 
   const comDado = (f) => porIso.has(f.properties.iso3) && !f.properties.ponto;
@@ -123,6 +126,13 @@ function montaSVG(topo) {
     .attr('class', 'forma forma--ponto').attr('data-chave', (f) => f.properties.iso3)
     .attr('cx', (f) => ancora.get(f.properties.iso3).x).attr('cy', (f) => ancora.get(f.properties.iso3).y).attr('r', 4);
   ligaEventos(slot('eSvg'));
+  zoomCtl = criaZoom({
+    svg: slot('eSvg'), g: gZoom, largura: W, altura: H, kMax: 12, rotulo: 'mapa-múndi',
+    // os pontos dos países pequenos mantêm o tamanho na tela; polígonos e círculos crescem com o zoom
+    aoMudar: (tr) => { camadas.pontos.selectAll('circle').attr('r', 4 / tr.k); slot('eTooltip').hidden = true; },
+  });
+  folha = criaFolha({ rotulo: 'Detalhe do país', aoFechar: () => {} });
+  criaAbas(document.querySelector('#exterior .mapa-layout'), () => folha.fecha());
 }
 
 // ------------------------------------------------------------------ pintura
@@ -209,8 +219,13 @@ function hover(iso) {
   posicionaTooltip(iso);
 }
 
-/** Clique fixa o país; clicar de novo solta. */
+/** Clique fixa o país; clicar de novo solta. No mobile, o toque fixa e abre a folha inferior com as cidades. */
 function escolhe(iso) {
+  if (ehMobile()) {
+    if (est.pais !== iso) aplica({ ...est, pais: iso });
+    folha.abre(`<div class="detalhe detalhe--folha">${htmlDetalhe(iso, true)}</div>`, formaDe(iso));
+    return;
+  }
   aplica({ ...est, pais: est.pais === iso ? null : iso });
 }
 
@@ -236,9 +251,11 @@ function posicionaTooltip(iso) {
   const caixa = slot('eCaixa').getBoundingClientRect();
   const svgR = slot('eSvg').getBoundingClientRect();
   const esc2 = svgR.width / W;
-  const a = ancora.get(iso);
+  const z = zoomCtl.transform;
+  const a0 = ancora.get(iso);
+  const a = { x: z.applyX(a0.x), y: z.applyY(a0.y), bbox: a0.bbox.map(([bx, by]) => [z.applyX(bx), z.applyY(by)]) };
   const ehCirculo = est.met === 'vot' && formaDe(iso)?.tagName === 'circle';
-  const r = ehCirculo ? +formaDe(iso).getAttribute('r') : 0;
+  const r = ehCirculo ? +formaDe(iso).getAttribute('r') * z.k : 0;
   const [[bx0, by0], [bx1, by1]] = ehCirculo ? [[a.x - r, a.y - r], [a.x + r, a.y + r]] : a.bbox;
   const esq = svgR.left - caixa.left + bx0 * esc2, dir = svgR.left - caixa.left + bx1 * esc2;
   const topo = svgR.top - caixa.top + by0 * esc2, base = svgR.top - caixa.top + by1 * esc2;
@@ -317,8 +334,8 @@ function renderLista() {
   el.setAttribute('role', 'group');
   el.setAttribute('aria-label', `Países com eleitores brasileiros (${paises.length}). Use as setas para percorrer a lista.`);
   desenhaLista(el, ord.map((x, i) => {
-    const fundo = x.val.especial === 'sem' ? 'class="barra amostra-hachura"'
-      : `class="barra" style="width:${Math.max(2, (x.val.mag / max) * 100).toFixed(1)}%;background:${x.val.cor}"`;
+    const fundo = x.val.especial === 'sem' ? 'class="rank-barra amostra-hachura"'
+      : `class="rank-barra" style="width:${Math.max(2, (x.val.mag / max) * 100).toFixed(1)}%;background:${x.val.cor}"`;
     return { chave: x.chave, rotulo: `${esc(x.nome)}: ${esc(x.val.txt)}`,
       html: `<span class="pos num">${i + 1}</span><b>${esc(x.nome)}</b><span class="trilho-rank"><span ${fundo}></span></span><span class="num valor">${esc(x.val.txt)}</span>` };
   }), est.pais);
@@ -326,7 +343,11 @@ function renderLista() {
 }
 
 function renderDetalhe() {
-  const iso = ui.hov ?? est.pais;
+  slot('eDetalhe').innerHTML = htmlDetalhe(ui.hov ?? est.pais, false);
+}
+
+/** Conteúdo do painel (desktop) ou da folha inferior (mobile, `naFolha`). */
+function htmlDetalhe(iso, naFolha) {
   const p = iso && porIso.get(iso);
   const zz = D.ufs.find((u) => u.uf === 'ZZ');
   const item = p || { pais: 'Exterior', turnos: zz.turnos, cidades: null, n_cidades: paises.reduce((s, x) => s + x.n_cidades, 0) };
@@ -351,11 +372,11 @@ function renderDetalhe() {
       : `${inteiro(cb.comparecimento)} votantes · LULA ${pctCandidato(cb.votos['13'], cb.pct_validos['13'])} · FLAVIO ${pctCandidato(cb.votos['22'], cb.pct_validos['22'])}`;
     return `<li><b>${esc(c.nome)}</b><span class="num">${txt}</span></li>`;
   }).join('')}</ul>` : '';
-  const nota = p ? (p.iso3 === est.pais && !ui.hov ? 'País fixado. Clique de novo para soltar.' : 'Clique para fixar.')
+  const nota = naFolha ? '' : p ? (p.iso3 === est.pais && !ui.hov ? 'País fixado. Clique de novo para soltar.' : 'Clique para fixar.')
     : 'Total do exterior. Passe o cursor num país para ver as cidades.';
-  slot('eDetalhe').innerHTML = `<div class="detalhe__cab"><span class="detalhe__nome">${esc(item.pais)}</span><span class="rotulo">${est.turno}º turno</span></div>
+  return `<div class="detalhe__cab"><span class="detalhe__nome">${esc(item.pais)}</span><span class="rotulo">${est.turno}º turno</span></div>
     <span class="detalhe__sub">${inteiro(item.n_cidades)} ${item.n_cidades === 1 ? 'cidade' : 'cidades'}${p ? '' : ` em ${paises.length} países`}</span>
-    ${av.map((a) => `<p class="aviso">${esc(a.texto)}</p>`).join('')}${h}${cidades}<p class="detalhe__nota">${nota}</p>`;
+    ${av.map((a) => `<p class="aviso">${esc(a.texto)}</p>`).join('')}${h}${cidades}${nota ? `<p class="detalhe__nota">${nota}</p>` : ''}`;
 }
 
 // ------------------------------------------------------------------ estados

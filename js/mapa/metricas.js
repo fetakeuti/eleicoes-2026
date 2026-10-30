@@ -58,7 +58,9 @@ export function valor(turnos, est, ordem, cortesAbst = CORTES.abstBR) {
     if (semVotantes(b)) return { v: 0, mag: 0, cor: null, especial: 'sem', txt: 'Sem votantes' };
     const p = b.pct_validos[est.cand];
     if (p === undefined || p === null) return { v: 0, mag: 0, cor: null, especial: 'sem-dado', txt: '—' };
-    return { v: p, mag: p, cor: rampa(est.cand, classe(p, cortesCand(est.cand))), txt: pct(p) };
+    // o rótulo nomeia o candidato: "Acre: FLAVIO 64,56%" (antes, só "Acre: 64,56%" no leitor de tela)
+    const nome = NOME_CURTO[est.cand] || `nº ${est.cand}`;
+    return { v: p, mag: p, cor: rampa(est.cand, classe(p, cortesCand(est.cand))), txt: `${nome} ${pct(p)}` };
   }
   if (est.met === 'abst') {
     const a = b ? b.taxa_abstencao : null;

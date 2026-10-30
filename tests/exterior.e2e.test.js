@@ -59,6 +59,8 @@ test('link direto #exterior?t=2&m=abst&pais=LBY e Voltar do navegador', { skip: 
   assert.equal(await nav.js(`document.querySelector('.camada-paises [data-chave="LBY"]').style.fill`), 'url("#hachura-ext")');
   await nav.clica('[data-slot=eLista] button[data-chave="JPN"]');
   await ate(`location.hash === '#exterior?t=2&m=abst&pais=JPN'`);
+  // tira o ponteiro de cima da lista: parado sobre a linha do Japão, o hover (por definição) mostraria o Japão
+  await nav.cmd('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 2, y: 2 });
   await nav.js('history.back()');
   await ate(`document.querySelector('[data-slot=eDetalhe] .detalhe__nome').textContent === 'Líbia'`);
 });

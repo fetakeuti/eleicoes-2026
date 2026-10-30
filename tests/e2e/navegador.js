@@ -72,6 +72,26 @@ export async function navegador() {
     cmd,   // acesso direto ao DevTools Protocol (ex.: mouseMoved para hover)
     async largura(w, h = 900) {
       await cmd('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: w < 768 });
+      await cmd('Emulation.setTouchEmulationEnabled', { enabled: w < 768, maxTouchPoints: 5 });
+    },
+    /** Toque (touchStart + touchEnd) no centro do elemento, ou num ponto [x, y] da tela. */
+    async toca(alvo) {
+      const p = Array.isArray(alvo) ? alvo : await api.js(`(async () => { const e = document.querySelector(${JSON.stringify(alvo)});
+        e.scrollIntoView({ block: 'center', behavior: 'instant' });
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+      await cmd('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: p[0], y: p[1] }] });
+      await cmd('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await espera(250);
+    },
+    /** Pinça com dois dedos afastando-se a partir do centro do elemento (aproxima). */
+    async pinca(seletor, distancia = 120) {
+      const [x, y] = await api.js(`(() => { const r = document.querySelector(${JSON.stringify(seletor)}).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+      const pts = (d) => [{ x: x - d, y, id: 1 }, { x: x + d, y, id: 2 }];
+      await cmd('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pts(20) });
+      for (let d = 30; d <= distancia; d += 15) await cmd('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pts(d) });
+      await cmd('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await espera(250);
     },
     async js(expr) {
       const r = await cmd('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });

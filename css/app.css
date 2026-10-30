@@ -184,7 +184,7 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .pilulas--cand button[aria-pressed="true"] { background: var(--cor-realce); color: var(--cor-tinta); }
 .pilulas i { display: inline-block; width: 10px; height: 10px; border-radius: var(--raio-ponto); }
 .trilha-linha { display: flex; flex-wrap: wrap; gap: var(--esp-3) var(--esp-6); align-items: center; min-height: var(--alvo-toque); }
-.trilha ol { display: flex; flex-wrap: wrap; gap: var(--esp-2); margin: 0; padding: 0; list-style: none; font-size: var(--tx-pequeno); }
+.trilha ol { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); margin: 0; padding: 0; list-style: none; font-size: var(--tx-pequeno); }
 .trilha li + li::before { content: "\203A"; margin-right: var(--esp-2); color: var(--cor-apoio); }
 .trilha [aria-current] { font-weight: var(--peso-semi); }
 
@@ -211,9 +211,10 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .mapa-svg .destaque { fill: none; pointer-events: none; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .mapa-svg .destaque--halo { stroke: var(--mapa-destaque-halo); }
 .mapa-svg .destaque--linha { stroke: var(--mapa-destaque-linha); }
+/* sigla escura com halo claro: o contraste é o do texto contra o próprio halo (17,8:1), em qualquer cor de UF.
+   Escolher texto claro ou escuro pela cor do fundo deixava classes abaixo de 4,5:1 (ex.: --div-abst-2, --div-abst-7). */
 .mapa-svg .camada-siglas text { font-family: var(--fonte-texto); font-size: var(--tx-rotulo); font-weight: var(--peso-semi);
-  fill: var(--cor-tinta); pointer-events: none; }
-.mapa-svg .camada-siglas text.sobre-escuro { fill: var(--cor-painel); }
+  fill: var(--cor-tinta); stroke: var(--cor-painel); stroke-width: 3px; stroke-linejoin: round; paint-order: stroke; pointer-events: none; }
 .mapa-svg .hachura-fundo { fill: var(--cor-painel); }
 .mapa-svg .hachura-linha { stroke: var(--mapa-hachura-linha); stroke-width: 2; }
 .mapa-estado { position: absolute; z-index: 5; left: var(--esp-4); right: var(--esp-4); top: var(--esp-4); display: flex; flex-direction: column;
@@ -270,8 +271,8 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .ranking__lista--uf button { grid-template-columns: 28px 32px minmax(0, 1fr) auto; }
 .ranking__lista button:hover, .ranking__lista button.foco { background: var(--cor-realce); }
 .ranking__lista .pos { color: var(--cor-apoio); }
-.ranking__lista .barra { display: block; height: 10px; min-width: 2px; outline: 1px solid var(--cor-linha-suave); }
-.ranking__lista .barra.amostra-hachura { width: 100%; }
+.ranking__lista .rank-barra { display: block; height: 10px; min-width: 2px; outline: 1px solid var(--cor-linha-suave); }
+.ranking__lista .rank-barra.amostra-hachura { width: 100%; }
 .ranking__lista .valor { text-align: right; font-weight: var(--peso-semi); white-space: nowrap; }
 
 /* ---------- Mapa-múndi ---------- */
@@ -322,6 +323,51 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .rc-placar i { display: inline-block; width: 10px; height: 10px; border-radius: var(--raio-ponto); }
 .amostra--cheia { background: var(--cor-tinta); }
 .amostra--clara { background: var(--cor-linha); }
+
+/* ---------- Zoom dos mapas ---------- */
+.zoom-botoes { position: absolute; z-index: 6; top: var(--esp-3); right: var(--esp-3); display: flex; flex-direction: column;
+  border: 1px solid var(--cor-tinta); border-radius: var(--raio-controle); background: var(--cor-painel); box-shadow: var(--sombra-flutuante); }
+.zoom-botoes button { width: var(--alvo-toque); height: var(--alvo-toque); border: 0; border-bottom: 1px solid var(--cor-linha-suave);
+  background: transparent; font-size: var(--tx-h3); line-height: 1; cursor: pointer; }
+.zoom-botoes button:last-child { border-bottom: 0; }
+.zoom-botoes button:hover { background: var(--cor-realce); }
+.mapa-svg--aproximado { cursor: grab; }
+
+/* ---------- Folha inferior (mobile) ---------- */
+.folha { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column;
+  background: var(--cor-painel); border-radius: var(--raio-folha) var(--raio-folha) 0 0; box-shadow: var(--sombra-folha);
+  max-height: 55vh; transition: max-height var(--duracao); }
+.folha[data-estado="cheia"] { max-height: calc(100dvh - 52px); height: calc(100dvh - 52px); }
+.folha__alca { flex: none; display: flex; align-items: center; justify-content: center; height: var(--alvo-toque); border: 0;
+  background: transparent; cursor: grab; touch-action: none; }
+.folha__alca span { display: block; width: 40px; height: 4px; border-radius: var(--raio-pilula); background: var(--cor-linha); }
+.folha__fechar { position: absolute; top: 0; right: var(--esp-2); width: var(--alvo-toque); height: var(--alvo-toque); border: 0;
+  background: transparent; font-size: var(--tx-h3); cursor: pointer; }
+.folha__corpo { overflow-y: auto; padding: 0 var(--gutter-mobile) var(--esp-6); }
+.folha__corpo:focus { outline: none; }
+.detalhe--folha { border: 0; padding: 0; min-height: 0; }
+.detalhe--folha .detalhe__ver { width: 100%; }
+body.com-folha { padding-bottom: 55vh; }   /* espaço para rolar o mapa acima da folha */
+@media (min-width: 768px) { .folha { display: none !important; } body.com-folha { padding-bottom: 0; } }
+
+/* ---------- Aba Mapa | Lista (mobile) ---------- */
+.abas-mapa { display: none; }
+@media (max-width: 767px) {
+  .abas-mapa { display: flex; align-self: stretch; }
+  .abas-mapa button { flex: 1 1 0; }
+  .mapa-layout[data-aba="mapa"] .lado { display: none; }
+  .mapa-layout[data-aba="lista"] .mapa-col { display: none; }
+  .mapa-layout .detalhe:not(.detalhe--folha) { display: none; }   /* no mobile, o detalhe vai para a folha */
+  .ranking__lista--longa { max-height: none; }
+  .zoom-botoes { top: var(--esp-2); right: var(--esp-2); }
+
+  /* alvos de toque de 44 px: o visual segue o HANDOFF (segmentado 40, pílula 36) e a área de toque cresce */
+  .segmentado button, .pilulas button { position: relative; }
+  .segmentado button::after { content: ""; position: absolute; inset: -2px 0; }
+  .pilulas button::after { content: ""; position: absolute; inset: -4px 0; }
+  .ranking__lista button { min-height: var(--alvo-toque); }
+  .trilha a, .rodape a { display: inline-flex; align-items: center; min-height: var(--alvo-toque); }
+}
 
 /* ---------- Brancos e nulos ---------- */
 .kpis--bn { border-bottom: 1px solid var(--cor-tinta); padding-bottom: var(--esp-5); }
