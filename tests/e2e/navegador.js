@@ -3,7 +3,7 @@
    Caminho do navegador: variável CHROME, ou os locais padrão abaixo. */
 
 import { createServer } from 'node:http';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { extname, join, normalize } from 'node:path';
@@ -22,16 +22,24 @@ export const CHROME = [
 
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export function servidor() {
+/** Servidor estático do site. Com `pages`, imita o GitHub Pages de um repositório de projeto: o site fica em
+    `/<pages>/`, só os arquivos versionados no git existem e o nome tem de bater exatamente (o Pages roda em
+    Linux; no Windows, existsSync aceitaria "dados/municipio/sp.json"). Os 404 ficam em `naoAchados`. */
+export function servidor({ pages } = {}) {
+  const base = pages ? `/${pages}/` : '/';
+  const versionados = pages ? new Set(execFileSync('git', ['ls-files'], { cwd: RAIZ, encoding: 'utf8' }).split('\n').filter(Boolean)) : null;
+  const naoAchados = [];
   const srv = createServer((req, res) => {
     let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (p.endsWith('/')) p += 'index.html';
-    const arq = normalize(join(RAIZ, p));
-    if (!arq.startsWith(normalize(RAIZ)) || !existsSync(arq) || statSync(arq).isDirectory()) { res.writeHead(404); res.end(); return; }
+    const rel = p.startsWith(base) ? p.slice(base.length) : null;
+    const arq = rel === null ? '' : normalize(join(RAIZ, rel));
+    const existe = rel !== null && arq.startsWith(normalize(RAIZ)) && (versionados ? versionados.has(rel) : existsSync(arq) && !statSync(arq).isDirectory());
+    if (!existe) { naoAchados.push(p); res.writeHead(404); res.end(); return; }
     res.writeHead(200, { 'content-type': TIPOS[extname(arq)] || 'application/octet-stream' });
     res.end(readFileSync(arq));
   });
-  return new Promise((r) => srv.listen(0, '127.0.0.1', () => r({ url: `http://127.0.0.1:${srv.address().port}/`, fecha: () => srv.close() })));
+  return new Promise((r) => srv.listen(0, '127.0.0.1', () => r({ url: `http://127.0.0.1:${srv.address().port}${base}`, naoAchados, fecha: () => srv.close() })));
 }
 
 export async function navegador() {
