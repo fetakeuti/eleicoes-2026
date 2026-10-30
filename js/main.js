@@ -1,19 +1,12 @@
 /* Ponto de entrada. Carga imediata (HANDOFF §1): meta, nacional e uf. Mapas e exterior carregam sob demanda. */
 
-import { slot, esc } from './comum.js';
+import { slot, esc, lerJSON } from './comum.js';
 import { iniciarNav } from './nav.js';
 import { renderResultado } from './secoes/resultado.js';
 import { renderComparacao } from './secoes/comparacao.js';
 import { renderBrancos } from './secoes/brancos.js';
 import { renderSobre, renderRodape } from './secoes/sobre.js';
-
-const DADOS = 'dados/';
-
-export async function lerJSON(caminho) {
-  const r = await fetch(DADOS + caminho);
-  if (!r.ok) throw new Error(`${caminho}: HTTP ${r.status}`);
-  return r.json();
-}
+import { iniciarMapaBrasil } from './mapa/brasil.js';
 
 async function carregar() {
   const carga = slot('carga');
@@ -29,6 +22,7 @@ async function carregar() {
     renderRodape(dados);
     carga.hidden = true;
     document.body.dataset.pronto = 'true';
+    iniciarMapaBrasil(dados);   // a malha de UFs carrega em seguida, com estado próprio de carregando/erro
   } catch (err) {
     carga.innerHTML = `<div class="leitura"><div class="erro" role="alert">
       <p>Não foi possível carregar os dados (${esc(err.message)}). Verifique a conexão e tente de novo.</p>

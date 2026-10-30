@@ -72,7 +72,8 @@ export async function navegador() {
     async abre(url) {
       await cmd('Page.navigate', { url });
       for (let i = 0; i < 100; i++) {
-        if (await api.js('document.body && document.body.dataset.pronto === "true"').catch(() => false)) return;
+        // dados carregados e fontes prontas: sem isso o layout ainda pode se deslocar entre medir e clicar
+        if (await api.js('document.body && document.body.dataset.pronto === "true" && document.fonts.status === "loaded"').catch(() => false)) return;
         await espera(100);
       }
       throw new Error('a página não terminou de carregar');

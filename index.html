@@ -10,6 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/app.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js" defer></script>
 <script type="module" src="js/main.js"></script>
 </head>
 <body>
@@ -82,7 +84,38 @@
         <h2 id="h-mapa" class="titulo-secao">Onde cada candidato teve mais votos, e onde se votou menos</h2>
         <p class="linha-fina">Por UF e por município. O exterior fica fora do mapa e da escala.</p>
       </div>
-      <div class="em-obra">O mapa do Brasil entra na Fase C.</div>
+      <div class="controles controles--mapa">
+        <div class="campo"><span class="rotulo" id="rot-mturno">Turno</span>
+          <div class="segmentado" role="group" aria-labelledby="rot-mturno" data-slot="mTurno"></div></div>
+        <div class="campo"><span class="rotulo" id="rot-mmet">Métrica</span>
+          <div class="segmentado" role="group" aria-labelledby="rot-mmet" data-slot="mMetrica"></div></div>
+        <div class="campo" data-slot="mCandCampo" hidden><span class="rotulo" id="rot-mcand">Candidato</span>
+          <div class="pilulas pilulas--cand" role="group" aria-labelledby="rot-mcand" data-slot="mCand"></div></div>
+        <div class="campo campo--busca" data-slot="mBusca"></div>
+      </div>
+      <div class="trilha-linha">
+        <nav class="trilha" aria-label="Trilha" data-slot="mTrilha"></nav>
+        <button type="button" class="botao" data-slot="mVoltar" hidden>← Voltar para as UFs</button>
+      </div>
+      <div class="mapa-layout">
+        <div class="mapa-col">
+          <div class="mapa-caixa" data-slot="mCaixa">
+            <div class="mapa-estado" data-slot="mEstado" role="status" aria-live="polite"></div>
+            <svg class="mapa-svg" data-slot="mSvg" role="group" aria-label="Mapa do Brasil"></svg>
+            <div class="tooltip" data-slot="mTooltip" role="tooltip" hidden></div>
+          </div>
+          <div class="legenda" data-slot="mLegenda"></div>
+          <div class="faixa-zz" data-slot="mZZ"></div>
+        </div>
+        <aside class="lado" aria-label="Detalhe e ranking">
+          <div class="detalhe" data-slot="mDetalhe" aria-live="polite"></div>
+          <div class="ranking">
+            <div class="ranking__cab"><span class="rotulo" data-slot="mRankTitulo">Ranking das 27 UFs</span><span class="rotulo" data-slot="mRankUnid"></span></div>
+            <div class="pilulas" role="group" aria-label="Ordem do ranking" data-slot="mOrdem"></div>
+            <div class="ranking__lista" data-slot="mRanking"></div>
+          </div>
+        </aside>
+      </div>
     </div>
   </section>
 

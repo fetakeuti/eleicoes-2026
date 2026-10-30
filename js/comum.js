@@ -13,16 +13,42 @@ export const corCand = (nr) => (nr === '13' || nr === '22' ? tok(`cand-${nr}`) :
 export const corCandClaro = (nr) => (nr === '13' || nr === '22' ? tok(`cand-${nr}-claro`) : tok('cand-demais'));
 
 /** Controle segmentado (HANDOFF §3): botões com aria-pressed. Monta os botões uma vez; o clique só troca
-    aria-pressed, para o botão escolhido continuar com o foco do teclado. */
-export function segmentado(alvo, opcoes, atual, aoEscolher) {
+    aria-pressed, para o botão escolhido continuar com o foco do teclado. `desabilitados`: ids com aria-disabled. */
+export function segmentado(alvo, opcoes, atual, aoEscolher, desabilitados = []) {
   alvo.innerHTML = opcoes.map(([id, rot]) =>
-    `<button type="button" data-id="${esc(id)}" aria-pressed="${id === atual}">${esc(rot)}</button>`).join('');
+    `<button type="button" data-id="${esc(id)}" aria-pressed="${id === atual}"${desabilitados.includes(id) ? ' aria-disabled="true"' : ''}>${esc(rot)}</button>`).join('');
   alvo.onclick = (e) => {
     const b = e.target.closest('button');
-    if (!b || b.getAttribute('aria-pressed') === 'true') return;
-    for (const x of alvo.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+    if (!b || b.getAttribute('aria-pressed') === 'true' || b.getAttribute('aria-disabled') === 'true') return;
+    marcaPressionado(alvo, b.dataset.id);
     aoEscolher(b.dataset.id);
   };
+}
+
+/** Sincroniza aria-pressed (e aria-disabled) de um grupo de botões sem recriá-los. */
+export function marcaPressionado(alvo, atual, desabilitados) {
+  for (const x of alvo.querySelectorAll('button')) {
+    x.setAttribute('aria-pressed', String(x.dataset.id === atual));
+    if (desabilitados) {
+      if (desabilitados.includes(x.dataset.id)) x.setAttribute('aria-disabled', 'true');
+      else x.removeAttribute('aria-disabled');
+    }
+  }
+}
+
+const DADOS = 'dados/';
+const cacheJSON = new Map();
+/** Lê um JSON de dados/ (com cache; uma falha não fica em cache, para o "Tentar de novo" funcionar). */
+export function lerJSON(caminho) {
+  if (!cacheJSON.has(caminho)) {
+    const p = fetch(DADOS + caminho).then((r) => {
+      if (!r.ok) throw new Error(`${caminho}: HTTP ${r.status}`);
+      return r.json();
+    });
+    p.catch(() => cacheJSON.delete(caminho));
+    cacheJSON.set(caminho, p);
+  }
+  return cacheJSON.get(caminho);
 }
 
 /** Barra de composição (HANDOFF §3): válidos / brancos / nulos / abstenção, sobre comparecimento + abstenção. */

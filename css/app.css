@@ -161,6 +161,113 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .composicao__legenda i { display: inline-block; width: 10px; height: 10px; margin-right: var(--esp-1); vertical-align: -1px; }
 .composicao__legenda i.hachura-abst { padding: 0; }
 
+/* ---------- Mapa do Brasil ---------- */
+.controles--mapa { justify-content: flex-start; }
+.campo--busca { flex: 1 1 260px; max-width: 360px; margin-left: auto; }
+.busca { position: relative; }
+.busca input { width: 100%; min-height: var(--alvo-toque); padding: 0 var(--esp-3); border: 1px solid var(--cor-tinta);
+  border-radius: var(--raio-controle); background: var(--cor-painel); font-size: var(--tx-corpo); }
+.busca__lista { position: absolute; z-index: 15; left: 0; right: 0; top: calc(100% + var(--esp-1)); margin: 0; padding: var(--esp-1) 0;
+  list-style: none; background: var(--cor-painel); border: 1px solid var(--cor-tinta); box-shadow: var(--sombra-flutuante); }
+.busca__lista li { display: flex; flex-direction: column; justify-content: center; min-height: var(--alvo-toque);
+  padding: var(--esp-2) var(--esp-3); cursor: pointer; }
+.busca__lista li span { font-size: var(--tx-legenda); color: var(--cor-apoio); }
+.busca__lista li[aria-selected="true"], .busca__lista li:hover { background: var(--cor-realce); }
+.busca__vazio { margin: var(--esp-1) 0 0; font-size: var(--tx-legenda); color: var(--cor-apoio); }
+.busca__vazio:empty { display: none; }
+.pilulas { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+.pilulas button { min-height: 36px; padding: 0 var(--esp-3); border: 1px solid var(--cor-linha); border-radius: var(--raio-pilula);
+  background: var(--cor-painel); font-size: var(--tx-legenda); font-weight: var(--peso-semi); cursor: pointer;
+  display: inline-flex; gap: var(--esp-2); align-items: center; }
+.pilulas button:hover { border-color: var(--cor-tinta); }
+.pilulas button[aria-pressed="true"] { background: var(--cor-tinta); color: var(--cor-painel); border-color: var(--cor-tinta); }
+.pilulas--cand button[aria-pressed="true"] { background: var(--cor-realce); color: var(--cor-tinta); }
+.pilulas i { display: inline-block; width: 10px; height: 10px; border-radius: var(--raio-ponto); }
+.trilha-linha { display: flex; flex-wrap: wrap; gap: var(--esp-3) var(--esp-6); align-items: center; min-height: var(--alvo-toque); }
+.trilha ol { display: flex; flex-wrap: wrap; gap: var(--esp-2); margin: 0; padding: 0; list-style: none; font-size: var(--tx-pequeno); }
+.trilha li + li::before { content: "\203A"; margin-right: var(--esp-2); color: var(--cor-apoio); }
+.trilha [aria-current] { font-weight: var(--peso-semi); }
+
+.mapa-layout { display: flex; flex-wrap: wrap; gap: var(--esp-10); align-items: flex-start; }
+.mapa-col { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: var(--esp-4); }
+.lado { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: var(--esp-5); }
+.mapa-caixa { position: relative; background: var(--cor-painel); border: 1px solid var(--cor-linha-suave); padding: var(--esp-4); }
+.mapa-svg { display: block; width: 100%; height: auto; max-height: 720px; touch-action: manipulation; }
+.mapa-svg .forma { stroke: var(--mapa-borda); stroke-width: .8; vector-effect: non-scaling-stroke; cursor: pointer;
+  transition: opacity var(--duracao); }
+.mapa-svg .forma:focus-visible { outline: none; }
+.mapa-svg .forma--uf.apagada { opacity: .35; }
+.mapa-svg .forma--uf.sob-municipios { fill: var(--mapa-sem-eleitorado) !important; cursor: default; }
+.mapa-svg .forma--uf.carregando { fill: var(--cor-linha-fraca) !important; }
+.mapa-svg .forma--ponto { stroke: var(--mapa-destaque-linha); stroke-width: 1; }
+.mapa-svg .ponto__alvo { fill: transparent; cursor: pointer; }
+.mapa-svg .camada-virou path { fill: none; stroke: var(--cor-tinta); stroke-width: 2px; vector-effect: non-scaling-stroke; pointer-events: none; }
+.mapa-svg .destaque { fill: none; pointer-events: none; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.mapa-svg .destaque--halo { stroke: var(--mapa-destaque-halo); }
+.mapa-svg .destaque--linha { stroke: var(--mapa-destaque-linha); }
+.mapa-svg .camada-siglas text { font-family: var(--fonte-texto); font-size: var(--tx-rotulo); font-weight: var(--peso-semi);
+  fill: var(--cor-tinta); pointer-events: none; }
+.mapa-svg .camada-siglas text.sobre-escuro { fill: var(--cor-painel); }
+.mapa-svg .hachura-fundo { fill: var(--cor-painel); }
+.mapa-svg .hachura-linha { stroke: var(--mapa-hachura-linha); stroke-width: 2; }
+.mapa-estado { position: absolute; z-index: 5; left: var(--esp-4); right: var(--esp-4); top: var(--esp-4); display: flex; flex-direction: column;
+  gap: var(--esp-2); font-size: var(--tx-pequeno); color: var(--cor-texto-2); }
+.mapa-estado p { margin: 0; }
+.progresso { height: 4px; background: var(--cor-linha-fraca); }
+.progresso span { display: block; height: 100%; background: var(--cor-tinta); transition: width var(--duracao); }
+.mapa-caixa--carregando .mapa-svg { opacity: .6; }
+.tooltip { position: absolute; z-index: 10; max-width: 240px; padding: var(--esp-2) var(--esp-3); background: var(--cor-tinta);
+  color: var(--cor-painel); font-size: var(--tx-legenda); line-height: 1.35; pointer-events: none; box-shadow: var(--sombra-flutuante);
+  display: flex; flex-direction: column; }
+.tooltip b { font-size: var(--tx-pequeno); }
+.legenda { display: flex; flex-direction: column; gap: var(--esp-2); }
+.legenda__cab { display: flex; justify-content: space-between; gap: var(--esp-3); flex-wrap: wrap; font-size: var(--tx-pequeno);
+  font-weight: var(--peso-negrito); }
+.legenda__cab small { font-size: var(--tx-legenda); font-weight: var(--peso-regular); color: var(--cor-apoio); }
+.legenda__classes { display: flex; flex-wrap: wrap; row-gap: var(--esp-1); }
+.legenda__classes div { flex: 1 1 60px; min-width: 60px; display: flex; flex-direction: column; gap: var(--esp-1); font-size: var(--tx-rotulo); }
+.legenda__classes i { display: block; height: 14px; border-right: 1px solid var(--mapa-borda); }
+.legenda__grupos { display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-4); }
+.legenda__grupo { flex: 1 1 280px; display: flex; flex-direction: column; gap: var(--esp-1); }
+.legenda__extras { display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-5); font-size: var(--tx-legenda); color: var(--cor-texto-2); }
+.legenda__extras i { display: inline-block; width: 14px; height: 14px; margin-right: var(--esp-2); vertical-align: -2px; }
+.amostra-empate { background: var(--mapa-empate); }
+.amostra-hachura { background: repeating-linear-gradient(45deg, var(--mapa-hachura-linha) 0 2px, var(--cor-painel) 2px 5px); }
+.legenda__extras .amostra-ponto { width: 8px; height: 8px; border-radius: var(--raio-ponto); border: 1px solid var(--mapa-destaque-linha); }
+.faixa-zz { display: flex; gap: var(--esp-3); align-items: flex-start; padding: var(--esp-3) var(--esp-4); background: var(--cor-realce);
+  font-size: var(--tx-pequeno); }
+.faixa-zz b { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 22px;
+  background: var(--cor-tinta); color: var(--cor-painel); font-size: var(--tx-rotulo); }
+.detalhe { display: flex; flex-direction: column; gap: var(--esp-3); padding: var(--esp-5); background: var(--cor-painel);
+  border: 1px solid var(--cor-tinta); min-height: 472px; }
+.detalhe--t1 { min-height: 504px; }   /* alturas medidas no pior caso de cada turno: o hover não muda a altura */
+.detalhe__nota { margin-top: auto !important; }
+.detalhe__cab { display: flex; justify-content: space-between; align-items: baseline; gap: var(--esp-2); }
+.detalhe__nome { font-family: var(--fonte-display); font-size: var(--tx-display-m); font-weight: var(--peso-semi); line-height: 1.15; }
+.detalhe__sub { margin-top: calc(-1 * var(--esp-2)); font-size: var(--tx-pequeno); color: var(--cor-apoio); }
+.detalhe__linha { display: grid; grid-template-columns: minmax(7em, 1fr) auto; gap: var(--esp-3); align-items: baseline;
+  padding: var(--esp-2) 0; border-bottom: 1px solid var(--cor-linha-fraca); font-size: var(--tx-pequeno); }
+.detalhe__linha > span:first-child b { overflow-wrap: normal; }   /* nomes quebram entre palavras, nunca no meio */
+.detalhe__linha i { display: inline-block; width: 10px; height: 10px; border-radius: var(--raio-ponto); margin-right: var(--esp-2); }
+.detalhe__linha .num b { font-size: var(--tx-dek); }
+.detalhe__linha small { display: block; text-align: right; color: var(--cor-apoio); }
+.detalhe__nota { margin: 0; font-size: var(--tx-legenda); color: var(--cor-apoio); }
+.aviso { margin: 0; padding: var(--esp-2) var(--esp-3); background: var(--cor-realce); font-size: var(--tx-legenda); }
+.ranking { display: flex; flex-direction: column; gap: var(--esp-2); }
+.ranking__cab { display: flex; justify-content: space-between; gap: var(--esp-2); }
+.ranking__lista { display: flex; flex-direction: column; border-top: 1px solid var(--cor-tinta); }
+.ranking__lista--longa { max-height: 560px; overflow-y: auto; }
+.ranking__lista button { display: grid; grid-template-columns: 28px minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: var(--esp-2); align-items: center;
+  min-height: 32px; padding: var(--esp-1); border: 0; border-bottom: 1px solid var(--cor-linha-fraca); background: var(--cor-painel);
+  cursor: pointer; text-align: left; font-size: var(--tx-legenda); }
+.ranking__lista button { flex: none; line-height: 1.3; }   /* sem encolher dentro da lista com rolagem */
+.ranking__lista--uf button { grid-template-columns: 28px 32px minmax(0, 1fr) auto; }
+.ranking__lista button:hover, .ranking__lista button.foco { background: var(--cor-realce); }
+.ranking__lista .pos { color: var(--cor-apoio); }
+.ranking__lista .barra { display: block; height: 10px; min-width: 2px; outline: 1px solid var(--cor-linha-suave); }
+.ranking__lista .barra.amostra-hachura { width: 100%; }
+.ranking__lista .valor { text-align: right; font-weight: var(--peso-semi); white-space: nowrap; }
+
 /* ---------- Brancos e nulos ---------- */
 .kpis--bn { border-bottom: 1px solid var(--cor-tinta); padding-bottom: var(--esp-5); }
 /* colunas: rótulo | trilho 0–5% | valor | variação. O trilho tem largura fixa no eixo, e o valor nunca quebra. */
@@ -196,6 +303,8 @@ body.carregando-dados [data-slot] { min-height: 0; }
   .tabela-cand .linha { grid-template-columns: 150px minmax(140px, 1fr) 96px 96px 118px; column-gap: var(--esp-4); }
   .eixo { white-space: nowrap; }
   .tabela-part { min-width: 0; }
+  .lado { flex-direction: row; flex-wrap: wrap; }
+  .lado > * { flex: 1 1 320px; }
   .tabela-part .linha { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 130px; column-gap: var(--esp-4); }
   /* segmentos estreitos: os valores ficam só na legenda */
   .composicao .rot-dentro { display: none; }
@@ -223,6 +332,8 @@ body.carregando-dados [data-slot] { min-height: 0; }
     justify-content: space-between; align-items: baseline; column-gap: var(--esp-3); }
   .kpi__var { flex: 1 0 100%; }
   .definicoes { grid-template-columns: 1fr; gap: var(--esp-1); }
+  .lado { flex-direction: column; }
+  .campo--busca { max-width: none; margin-left: 0; }
   .definicoes dd { margin-bottom: var(--esp-3); }
   .controles { align-items: stretch; }
   .segmentado button { flex: 1 1 auto; }
