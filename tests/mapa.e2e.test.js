@@ -3,9 +3,10 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { renameSync } from 'node:fs';
+import { readFileSync, renameSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { CHROME, servidor, navegador } from './e2e/navegador.js';
+import { inteiro, variacaoInteiro } from '../js/formato.js';
 
 const SEM_CHROME = CHROME ? false : 'Chrome não encontrado (defina a variável CHROME para rodar)';
 const AC = fileURLToPath(new URL('../dados/municipio/AC.json', import.meta.url));
@@ -68,6 +69,29 @@ test('abrir direto pela URL restaura turno, métrica, UF e município', { skip: 
   const pressionados = await nav.js(`[...document.querySelectorAll('#mapa [aria-pressed="true"]')].map((b) => b.dataset.id)`);
   assert.ok(pressionados.includes('v') && pressionados.includes('flip'));
   assert.equal(await nav.js(`document.querySelectorAll('.camada-virou path').length`), 32, '32 municípios de SP viraram');
+});
+
+test('variação entre turnos: painel com votos e eleitores do 1º e do 2º turno e a diferença, sem mudar de altura', { skip: SEM_CHROME }, async () => {
+  await nav.abre(`${srv.url}#mapa?t=v&m=dmarg&uf=SP`);
+  await ate(`document.querySelectorAll('.forma--mun').length === 645`);
+  const sp = JSON.parse(readFileSync(fileURLToPath(new URL('../dados/uf.json', import.meta.url)), 'utf8')).ufs.find((u) => u.uf === 'SP').turnos;
+  const linhas = await nav.js(`[...document.querySelectorAll('[data-slot=mDetalhe] .detalhe__linha .num')]
+    .map((n) => [n.querySelector('.detalhe__abs').textContent, n.querySelectorAll('small')[1].textContent])`);
+  const esperado = (a, b, un) => [`${inteiro(a)} → ${inteiro(b)}`, `${variacaoInteiro(b - a)} ${un}`];
+  assert.deepEqual(linhas, [
+    esperado(sp['1'].votos['13'], sp['2'].votos['13'], 'votos'),
+    esperado(sp['1'].votos['22'], sp['2'].votos['22'], 'votos'),
+    esperado(sp['1'].abstencao, sp['2'].abstencao, 'eleitores'),
+  ]);
+  // a altura mínima cobre o pior caso (nome de município em 2 linhas): o ranking logo abaixo não pula no hover
+  const altura = () => nav.js(`document.querySelector('[data-slot=mDetalhe]').getBoundingClientRect().height`);
+  await nav.abre(`${srv.url}#mapa?t=v&m=dmarg`);
+  await ate(`document.querySelectorAll('.forma--uf').length === 27`);
+  const hBrasil = await altura();
+  await nav.abre(`${srv.url}#mapa?t=v&m=dmarg&uf=MT&mun=5105507`);
+  await ate(`document.querySelector('.detalhe__nome')?.textContent === 'Vila Bela da Santíssima Trindade'`);
+  assert.equal(await altura(), hBrasil);
+  assert.deepEqual(nav.erros, []);
 });
 
 test('busca normalizada troca a UF sozinha', { skip: SEM_CHROME }, async () => {

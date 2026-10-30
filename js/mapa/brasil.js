@@ -4,7 +4,7 @@
 
 /* global d3, topojson */
 import { slot, esc, segmentado, marcaPressionado, lerJSON, corCand, candidato } from '../comum.js';
-import { pct, pctCandidato, inteiro, difPP, decimal, votos as fVotos } from '../formato.js';
+import { pct, pctCandidato, inteiro, difPP, decimal, variacaoInteiro, votos as fVotos } from '../formato.js';
 import { resultado } from '../regras.js';
 import { valor, legenda, ordens, ordena, METRICAS, CANDIDATOS_PCT, NOME_CURTO } from './metricas.js';
 import { lerHash, escreverHash, corrige, mudouNivel, PADRAO, RECORTES } from './estado.js';
@@ -540,6 +540,7 @@ function renderDetalhe() {
   const nivel = nivelAtual();
   const alvo = slot('mDetalhe');
   alvo.classList.toggle('detalhe--t1', est.turno === '1');
+  alvo.classList.toggle('detalhe--v', est.turno === 'v');
   alvo.innerHTML = htmlDetalhe(ui.hov ?? (nivel === 'mun' ? est.mun : null), false);
   const bv = alvo.querySelector('[data-ver]');
   if (bv.dataset.ver) bv.onclick = () => escolhe(bv.dataset.ver);
@@ -571,15 +572,19 @@ function htmlDetalhe(foco, naFolha) {
   else if (u.tipo === 'uf' && est.rec === 'ncap') sub = u.recortes.nao_capital ? `Sem a capital: ${inteiro(u.recortes.nao_capital.n_municipios)} municípios` : 'Sem a capital';
   else if (u.tipo === 'br' && est.rec !== 'todos') sub = est.rec === 'cap' ? 'Só as 27 capitais' : 'Sem as capitais';
   const t = est.turno;
-  const linha = (cor, nome, a, b) => `<div class="detalhe__linha"><span>${cor ? `<i style="background:${cor}"></i>` : ''}<b>${esc(nome)}</b></span>
-    <span class="num"><b>${a}</b> <small>${b}</small></span></div>`;
+  // `abs`: na variação entre turnos, o par em números absolutos ([1º → 2º, diferença]) abaixo do par em %
+  const linha = (cor, nome, a, b, abs) => `<div class="detalhe__linha"><span>${cor ? `<i style="background:${cor}"></i>` : ''}<b>${esc(nome)}</b></span>
+    <span class="num"><b>${a}</b> <small>${b}</small>${abs ? `<span class="detalhe__abs">${abs[0]}</span> <small>${abs[1]}</small>` : ''}</span></div>`;
+  const absTurnos = (x, y, un) => [`${inteiro(x)} → ${inteiro(y)}`, `${variacaoInteiro(y - x)} ${un}`];
   let h;
   if (!u.turnos) {
     h = '<p class="aviso">O Distrito Federal tem um só município, Brasília, que é a capital. Não há municípios neste recorte.</p>';
   } else if (t === 'v') {
     const [a, b] = [u.turnos['1'], u.turnos['2']];
-    h = ['13', '22'].map((nr) => linha(corCand(nr), nomeCand(nr), `${pct(a.pct_validos[nr])} → ${pct(b.pct_validos[nr])}`, difPP(a.pct_validos[nr], b.pct_validos[nr]))).join('')
-      + linha(null, 'Abstenção', `${pct(a.taxa_abstencao)} → ${pct(b.taxa_abstencao)}`, difPP(a.taxa_abstencao, b.taxa_abstencao));
+    h = ['13', '22'].map((nr) => linha(corCand(nr), nomeCand(nr), `${pct(a.pct_validos[nr])} → ${pct(b.pct_validos[nr])}`, difPP(a.pct_validos[nr], b.pct_validos[nr]),
+      absTurnos(a.votos[nr], b.votos[nr], 'votos'))).join('')
+      + linha(null, 'Abstenção', `${pct(a.taxa_abstencao)} → ${pct(b.taxa_abstencao)}`, difPP(a.taxa_abstencao, b.taxa_abstencao),
+        absTurnos(a.abstencao, b.abstencao, 'eleitores'));
   } else {
     const b = u.turnos[t];
     h = ['13', '22'].map((nr) => linha(corCand(nr), nomeCand(nr), pctCandidato(b.votos[nr], b.pct_validos[nr]), fVotos(b.votos[nr]))).join('');

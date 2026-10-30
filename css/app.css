@@ -248,6 +248,7 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .detalhe { display: flex; flex-direction: column; gap: var(--esp-3); padding: var(--esp-5); background: var(--cor-painel);
   border: 1px solid var(--cor-tinta); min-height: 472px; }
 .detalhe--t1 { min-height: 504px; }   /* alturas medidas no pior caso de cada turno: o hover não muda a altura */
+.detalhe--v { min-height: 552px; }    /* variação, com os números absolutos: "Vila Bela da Santíssima Trindade" em 2 linhas */
 .detalhe__nota { margin-top: auto !important; }
 .detalhe__cab { display: flex; justify-content: space-between; align-items: baseline; gap: var(--esp-2); }
 .detalhe__nome { font-family: var(--fonte-display); font-size: var(--tx-display-m); font-weight: var(--peso-semi); line-height: 1.15; }
@@ -258,6 +259,7 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .detalhe__linha i { display: inline-block; width: 10px; height: 10px; border-radius: var(--raio-ponto); margin-right: var(--esp-2); }
 .detalhe__linha .num b { font-size: var(--tx-dek); }
 .detalhe__linha small { display: block; text-align: right; color: var(--cor-apoio); }
+.detalhe__abs { display: block; margin-top: var(--esp-1); text-align: right; }   /* variação entre turnos: votos ou eleitores, 1º → 2º */
 .detalhe__nota { margin: 0; font-size: var(--tx-legenda); color: var(--cor-apoio); }
 .aviso { margin: 0; padding: var(--esp-2) var(--esp-3); background: var(--cor-realce); font-size: var(--tx-legenda); }
 .ranking { display: flex; flex-direction: column; gap: var(--esp-2); }
