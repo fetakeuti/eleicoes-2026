@@ -73,7 +73,17 @@ export async function navegador() {
       await cmd('Page.navigate', { url });
       for (let i = 0; i < 100; i++) {
         // dados carregados e fontes prontas: sem isso o layout ainda pode se deslocar entre medir e clicar
-        if (await api.js('document.body && document.body.dataset.pronto === "true" && document.fonts.status === "loaded"').catch(() => false)) return;
+        if (await api.js('document.body && document.body.dataset.pronto === "true" && document.fonts.status === "loaded"').catch(() => false)) {
+          // a rolagem até a âncora é animada (scroll-behavior: smooth): espera assentar antes de medir e clicar
+          let antes = -1;
+          for (let j = 0; j < 40; j++) {
+            const y = await api.js('scrollY');
+            if (y === antes) return;
+            antes = y;
+            await espera(120);
+          }
+          return;
+        }
         await espera(100);
       }
       throw new Error('a página não terminou de carregar');

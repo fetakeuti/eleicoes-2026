@@ -94,3 +94,28 @@ test('erro ao carregar municípios: mensagem, mapa por UF continua e "Tentar de 
   await nav.clica('[data-slot=mEstado] button');
   await ate(`document.querySelectorAll('.forma--mun').length === 22`);
 });
+
+test('lista do drill-down: todos os municípios, setas movem o foco e o foco destaca o polígono', { skip: SEM_CHROME }, async () => {
+  await nav.abre(`${srv.url}?l=1#mapa?t=2&m=venc&uf=MG`);
+  await ate(`document.querySelectorAll('.forma--mun').length === 853`);
+  assert.equal(await nav.js(`document.querySelectorAll('.ranking__lista button').length`), 853, 'lista completa, não um top N');
+  assert.equal(await nav.js(`document.querySelectorAll('.ranking__lista button[tabindex="0"]').length`), 1, 'uma parada só no Tab');
+
+  await nav.js(`document.querySelector('.ranking__lista button[tabindex="0"]').focus()`);
+  for (let i = 0; i < 3; i++) await nav.tecla('ArrowDown');
+  const quarto = await nav.js(`(() => { const b = [...document.querySelectorAll('.ranking__lista button')]; return { i: b.indexOf(document.activeElement), chave: document.activeElement.dataset.chave, nome: document.activeElement.querySelector('b').textContent }; })()`);
+  assert.equal(quarto.i, 3);
+  assert.equal(await nav.js(`document.querySelector('.detalhe__nome').textContent`), quarto.nome, 'o painel mostra o município em foco');
+  assert.equal(await nav.js(`document.querySelectorAll('.camada-destaque g').length`), 1, 'contorno duplo no polígono em foco');
+  assert.equal(await nav.js(`document.querySelectorAll('.ranking__lista button[tabindex="0"]').length`), 1);
+
+  await nav.tecla('End');
+  assert.equal(await nav.js(`[...document.querySelectorAll('.ranking__lista button')].indexOf(document.activeElement)`), 852);
+  await nav.tecla('Home');
+  await nav.tecla('ArrowDown');
+  const chave = await nav.js(`document.activeElement.dataset.chave`);
+  await nav.tecla('Enter');
+  await ate(`location.hash.includes('mun=${chave}')`);
+  assert.equal(await nav.js(`location.hash.endsWith('mun=' + document.activeElement.dataset.chave)`), true, 'Enter fixa e o foco continua na mesma linha');
+  assert.equal(await nav.js(`document.activeElement.dataset.chave`), chave);
+});

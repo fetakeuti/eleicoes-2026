@@ -79,7 +79,7 @@ Estados comuns: **padrão · hover (desktop) / toque (mobile) · foco de teclado
 | % de um candidato (só UF) | `pct_validos[nr]` | 5 classes iguais de 0 a d<sub>max</sub>; d<sub>max</sub>: 13 e 22 = 80; 55 = 15; 70 e 14 = 5 | rampa do candidato; eliminados usam `--rampa-demais` |
 | Abstenção — Brasil (UF e município) | `taxa_abstencao` | 16 · 18 · 20 · 22 · 24 | `--abst-br-1…6`. Domínio fixo nos dois turnos. UFs vão de 13,89 a 26,08; municípios de 6,88 a 41,01 (caem nas classes das pontas). |
 | Abstenção — exterior | `taxa_abstencao` | 40 · 50 · 60 · 70 · 80 | `--abst-ext-1…6` (matiz diferente de propósito). Países de 36,79 a 100. |
-| Mudança de vencedor | líder 1º × vencedor 2º | categórico | `--manteve-13/22`, `--virou-13/22` + contorno tinta 2px em quem virou (UF: só MG; SP municipal: 33). |
+| Mudança de vencedor | líder 1º × vencedor 2º | categórico | `--manteve-13/22`, `--virou-13/22` + contorno tinta 2px em quem virou (UF: só MG; SP municipal: 32). Empate por votos inteiros no 1º ou no 2º turno = `--mapa-empate` (sem líder no 1º turno não há "virou" nem "manteve"): Trabiju/SP e Crixás do Tocantins/TO no 1º turno, Marquinho/PR no 2º. Total municipal: 212 viraram, 3 empates. |
 | Deslocamento da margem | (L2−F2) − (L1−F1), p.p. | −6 · −4 · −2 · 0 · 2 · 4 · 6 | `--div-margem-1…8` (− FLAVIO, + LULA). UFs: +2,34 (RO) a +7,40 (RJ). |
 | Variação da abstenção | taxa 2º − taxa 1º, p.p. | −6 · −4 · −2 · 0 · 2 · 4 · 6 | `--div-abst-1…8`. UFs: −3,26 (BA) a +8,06 (AP). |
 | Votantes (só mundo) | comparecimento | círculo de área proporcional, r = √(c / 87.407) × 30 (viewBox 1000), mín. 1,5 | cor do vencedor; mapa de fundo `--mapa-neutro` |

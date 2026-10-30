@@ -49,7 +49,9 @@ async function carregaMalhaUF() {
     mostraEstado(null);
     const inicial = lerHash(location.hash);
     await aplica(inicial || est, false);
-    if (inicial) document.getElementById('mapa').scrollIntoView();
+    // com '#mapa?…' o navegador não acha a âncora (o id é só 'mapa'): rola aqui, sem animação.
+    // Com '#mapa' simples, o próprio navegador já rolou.
+    if (inicial && location.hash.includes('?')) document.getElementById('mapa').scrollIntoView({ behavior: 'instant' });
   } catch (err) {
     mostraEstado('erro', `Não foi possível carregar o mapa (${err.message}).`, null, carregaMalhaUF);
   }
@@ -308,7 +310,15 @@ function ligaEventos(el) {
   });
 }
 
+/** Chave do elemento com foco de teclado no mapa ou no ranking (o hover do mouse não pode apagá-lo). */
+function chaveEmFoco() {
+  const a = document.activeElement;
+  if (!a || !(slot('mRanking').contains(a) || slot('mSvg').contains(a))) return null;
+  return a.closest('[data-chave]')?.dataset.chave ?? null;
+}
+
 function hover(chave, alvo) {
+  if (chave === null) chave = chaveEmFoco();   // o mouse saiu: volta para o que está com o foco, se houver
   const c = chave === null ? null : (ufPorSigla.has(chave) ? chave : Number(chave));
   if (ui.hov === c) return;
   ui.hov = c;
@@ -433,22 +443,51 @@ function renderRanking() {
   const ord = ordena(itens, ui.ordem);
   const max = Math.max(...ord.map((x) => x.val.mag), 0.0001);
   const rk = slot('mRanking');
+  // se o foco estava na lista, volta para a mesma linha depois de redesenhar (ex.: Enter num município)
+  const focoAntes = rk.contains(document.activeElement) ? document.activeElement.dataset.chave : null;
   rk.classList.toggle('ranking__lista--longa', nivel === 'mun');
   rk.classList.toggle('ranking__lista--uf', nivel === 'uf');
+  rk.setAttribute('role', 'group');
+  rk.setAttribute('aria-label', `${slot('mRankTitulo').textContent}. Use as setas para percorrer a lista.`);
+  const alvoTab = focoAntes ?? String(est.mun ?? ord[0]?.chave ?? '');
   rk.innerHTML = ord.map((x, i) => {
     const largura = x.val.especial ? 0 : Math.max(2, Math.min(100, (x.val.mag / max) * 100));
     const fundo = x.val.especial === 'sem' ? 'class="barra amostra-hachura"' : `class="barra" style="width:${largura.toFixed(1)}%;background:${x.val.cor}"`;
-    return `<button type="button" data-chave="${x.chave}" aria-label="${esc(x.nome)}: ${esc(x.val.txt)}">
+    return `<button type="button" data-chave="${x.chave}" tabindex="${String(x.chave) === alvoTab ? 0 : -1}" aria-label="${esc(x.nome)}: ${esc(x.val.txt)}">
       <span class="pos num">${i + 1}</span><b>${esc(nivel === 'mun' ? x.nome : x.chave)}</b>
       <span class="trilho-rank"><span ${fundo}></span></span><span class="num valor">${esc(x.val.txt)}</span></button>`;
   }).join('');
-  const chaveDe = (e) => e.target.closest('button')?.dataset.chave ?? null;
-  rk.onpointerover = (e) => { if (e.pointerType !== 'touch') hover(chaveDe(e)); };
-  rk.onpointerleave = () => hover(null);
-  rk.onfocusin = (e) => hover(chaveDe(e));
-  rk.onfocusout = () => hover(null);
-  rk.onclick = (e) => { const c = chaveDe(e); if (c !== null) escolhe(c); };
+  if (!rk.querySelector('[tabindex="0"]')) rk.querySelector('button')?.setAttribute('tabindex', '0');
+  if (focoAntes !== null) rk.querySelector(`[data-chave="${focoAntes}"]`)?.focus({ preventScroll: true });
+  ligaRanking(rk);
   marcaRanking();
+}
+
+/** Eventos do ranking, ligados uma vez só (o conteúdo é redesenhado, o contêiner não).
+    focusin/focusout só funcionam via addEventListener: não existe a propriedade onfocusin. */
+let rankingLigado = false;
+function ligaRanking(rk) {
+  if (rankingLigado) return;
+  rankingLigado = true;
+  const chaveDe = (e) => e.target.closest('button')?.dataset.chave ?? null;
+  rk.addEventListener('pointerover', (e) => { if (e.pointerType !== 'touch') hover(chaveDe(e)); });
+  rk.addEventListener('pointerleave', () => hover(null));
+  rk.addEventListener('focusin', (e) => {
+    // tabindex itinerante: a lista é uma parada só no Tab; a linha em foco é a que recebe o Tab de volta
+    for (const b of rk.querySelectorAll('button[tabindex="0"]')) if (b !== e.target) b.setAttribute('tabindex', '-1');
+    e.target.setAttribute('tabindex', '0');
+    hover(chaveDe(e), e.target);
+  });
+  rk.addEventListener('focusout', (e) => { if (!rk.contains(e.relatedTarget)) hover(null); });
+  rk.addEventListener('keydown', (e) => {
+    const botoes = [...rk.querySelectorAll('button')];
+    const i = botoes.indexOf(document.activeElement);
+    const destino = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: botoes.length - 1 }[e.key];
+    if (destino === undefined || i < 0) return;
+    e.preventDefault();
+    botoes[Math.max(0, Math.min(botoes.length - 1, destino))].focus();
+  });
+  rk.addEventListener('click', (e) => { const c = chaveDe(e); if (c !== null) escolhe(c); });
 }
 
 function marcaRanking() {
