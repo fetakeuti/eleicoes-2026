@@ -192,12 +192,18 @@ body.carregando-dados [data-slot] { min-height: 0; }
 
 /* ---------- Tablet ---------- */
 @media (max-width: 1199px) {
-  .tabela-cand .linha { grid-template-columns: 200px minmax(0, 1fr) 120px 120px 130px; column-gap: var(--esp-4); }
+  /* tabelas mantêm as colunas (HANDOFF §5), mais estreitas; a barra fica com no mínimo 140 px */
+  .tabela-cand .linha { grid-template-columns: 150px minmax(140px, 1fr) 96px 96px 118px; column-gap: var(--esp-4); }
+  .eixo { white-space: nowrap; }
+  .tabela-part { min-width: 0; }
+  .tabela-part .linha { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 130px; column-gap: var(--esp-4); }
+  /* segmentos estreitos: os valores ficam só na legenda */
+  .composicao .rot-dentro { display: none; }
 }
 
 /* ---------- Mobile ---------- */
 @media (max-width: 767px) {
-  :root { --gutter: var(--gutter-mobile); --tx-display-xl: 34px; --tx-display-l: 28px; --tx-kpi: var(--tx-display-m); --tx-dek: var(--tx-corpo); }
+  :root { --gutter: var(--gutter-mobile); --tx-display-xl: var(--tx-display-xl-mobile); --tx-display-l: var(--tx-display-l-mobile); --tx-kpi: var(--tx-display-m); --tx-dek: var(--tx-corpo); }
   .barra__in { flex-wrap: wrap; height: auto; padding: 0; gap: 0; }
   .barra__titulo { flex: 1 0 100%; display: flex; align-items: center; height: 52px; padding: 0 var(--gutter-mobile); }
   .barra__nav { flex: 1 0 100%; background: var(--cor-painel); border-bottom: 1px solid var(--cor-linha); overflow-x: auto;
@@ -238,7 +244,7 @@ body.carregando-dados [data-slot] { min-height: 0; }
   .tabela-cand .linha--elim > .cand { grid-column: 1; }
   .tabela-cand .linha--elim > .cel-num { text-align: right; }
   .composicao { grid-template-columns: 1fr; gap: var(--esp-2); }
-  .composicao .rot-dentro { display: none; }   /* barras estreitas: os valores ficam só na legenda */
+  .tabela-part { min-width: 600px; }   /* mobile: a participação rola na horizontal dentro da caixa (HANDOFF §5) */
   /* brancos e nulos de perto: sem rolagem; valor e variação acima, barras em largura total */
   .tabela-bn { min-width: 0; }
   .tabela-bn .linha--cab { display: none; }

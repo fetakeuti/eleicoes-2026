@@ -35,3 +35,19 @@ test('nenhum hex, rgb() ou hsl() fora do tokens.css (checklist §7)', () => {
   }
   assert.deepEqual(achados, []);
 });
+
+test('todo font-size do site vem de um token de tipografia', () => {
+  const soltos = [];
+  for (const f of arquivos(RAIZ, ['.css', '.js'])) {
+    if (f.endsWith(join('css', 'tokens.css'))) continue;
+    readFileSync(f, 'utf8').split('\n').forEach((linha, i) => {
+      for (const m of linha.matchAll(/font-size:\s*([^;}"`]+)/g)) {
+        if (!/^var\(--tx-[\w-]+\)$/.test(m[1].trim()) && m[1].trim() !== '0') soltos.push(`${relative(RAIZ, f)}:${i + 1} ${m[0]}`);
+      }
+      for (const m of linha.matchAll(/--tx-[\w-]+:\s*([^;]+)/g)) {
+        if (!/^var\(--tx-[\w-]+\)$/.test(m[1].trim())) soltos.push(`${relative(RAIZ, f)}:${i + 1} ${m[0]}`);
+      }
+    });
+  }
+  assert.deepEqual(soltos, []);
+});

@@ -12,13 +12,16 @@ const tok = (nome) => `var(--${nome})`;
 export const corCand = (nr) => (nr === '13' || nr === '22' ? tok(`cand-${nr}`) : tok('cand-demais'));
 export const corCandClaro = (nr) => (nr === '13' || nr === '22' ? tok(`cand-${nr}-claro`) : tok('cand-demais'));
 
-/** Controle segmentado (HANDOFF §3): botões com aria-pressed. */
+/** Controle segmentado (HANDOFF §3): botões com aria-pressed. Monta os botões uma vez; o clique só troca
+    aria-pressed, para o botão escolhido continuar com o foco do teclado. */
 export function segmentado(alvo, opcoes, atual, aoEscolher) {
   alvo.innerHTML = opcoes.map(([id, rot]) =>
     `<button type="button" data-id="${esc(id)}" aria-pressed="${id === atual}">${esc(rot)}</button>`).join('');
   alvo.onclick = (e) => {
     const b = e.target.closest('button');
-    if (b && b.getAttribute('aria-pressed') !== 'true') aoEscolher(b.dataset.id);
+    if (!b || b.getAttribute('aria-pressed') === 'true') return;
+    for (const x of alvo.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+    aoEscolher(b.dataset.id);
   };
 }
 

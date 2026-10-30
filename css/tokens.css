@@ -74,6 +74,8 @@
 
   --tx-display-xl: 54px;   /* manchete do Resultado (desktop) */
   --tx-display-l: 44px;    /* título de seção (desktop) */
+  --tx-display-xl-mobile: 34px;  /* manchete do Resultado (mobile) */
+  --tx-display-l-mobile: 28px;   /* título de seção (mobile) */
   --tx-display-m: 26px;    /* nome no painel de detalhe / folha */
   --tx-kpi: 40px;          /* número grande de KPI */
   --tx-h3: 20px;           /* subtítulo de bloco */
