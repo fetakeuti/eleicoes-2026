@@ -1,6 +1,6 @@
 {
   "titulo": "Eleição Presidencial 2026 — dados agregados (TSE)",
-  "gerado_em": "29/10/2026 18:46:58",
+  "gerado_em": "29/10/2026 22:49:08",
   "pipeline": "_pipeline/build.py (decisões em _pipeline/DECISOES.md)",
   "fontes": [
     {
@@ -243,134 +243,137 @@
     "nacional.json = Relatório Resultado da Totalização do TSE (PDF), Brasil e exterior; e cada UF conferida no PDF",
     "em cada município: soma dos candidatos = válidos; total = válidos + brancos + nulos = comparecimento",
     "soma de cada municipio/<UF>.json = a UF em uf.json",
+    "em cada UF: capital + não capital = UF (o DF só tem a capital)",
+    "soma das capitais + não capitais + exterior = nacional.json",
+    "27 capitais, uma por UF, com código e nome conferidos no IBGE",
     "malhas: todo cd_ibge de municipio.json tem polígono na malha do IBGE e vice-versa (fora as 2 lagoas do RS)",
     "malhas: em cada UF, área da UF = soma das áreas dos municípios depois da simplificação (topologia mantida)",
     "malhas: todo iso3 de exterior_pais.json tem polígono ou ponto na malha mundial"
   ],
   "arquivos": {
     "nacional.json": {
-      "bytes": 898,
-      "bytes_gzip": 439
+      "bytes": 2744,
+      "bytes_gzip": 1034
     },
     "uf.json": {
-      "bytes": 23334,
-      "bytes_gzip": 6316
+      "bytes": 67912,
+      "bytes_gzip": 16773
     },
     "municipio.json": {
-      "bytes": 4444747,
-      "bytes_gzip": 870681
+      "bytes": 4533856,
+      "bytes_gzip": 874138
     },
     "exterior_pais.json": {
       "bytes": 263383,
       "bytes_gzip": 29141
     },
     "municipio/AC.json": {
-      "bytes": 17665,
-      "bytes_gzip": 4228
+      "bytes": 18016,
+      "bytes_gzip": 4260
     },
     "municipio/AL.json": {
-      "bytes": 81638,
-      "bytes_gzip": 16931
+      "bytes": 83269,
+      "bytes_gzip": 16997
     },
     "municipio/AM.json": {
-      "bytes": 49529,
-      "bytes_gzip": 10510
+      "bytes": 50520,
+      "bytes_gzip": 10556
     },
     "municipio/AP.json": {
-      "bytes": 12805,
-      "bytes_gzip": 3174
+      "bytes": 13060,
+      "bytes_gzip": 3201
     },
     "municipio/BA.json": {
-      "bytes": 333788,
-      "bytes_gzip": 66156
+      "bytes": 340459,
+      "bytes_gzip": 66475
     },
     "municipio/CE.json": {
-      "bytes": 147617,
-      "bytes_gzip": 30011
+      "bytes": 150560,
+      "bytes_gzip": 30141
     },
     "municipio/DF.json": {
-      "bytes": 908,
-      "bytes_gzip": 456
+      "bytes": 923,
+      "bytes_gzip": 465
     },
     "municipio/ES.json": {
-      "bytes": 62963,
-      "bytes_gzip": 13725
+      "bytes": 64210,
+      "bytes_gzip": 13802
     },
     "municipio/GO.json": {
-      "bytes": 195647,
-      "bytes_gzip": 37825
+      "bytes": 199582,
+      "bytes_gzip": 37951
     },
     "municipio/MA.json": {
-      "bytes": 173919,
-      "bytes_gzip": 34799
+      "bytes": 177390,
+      "bytes_gzip": 34980
     },
     "municipio/MG.json": {
-      "bytes": 679930,
-      "bytes_gzip": 135271
+      "bytes": 693577,
+      "bytes_gzip": 135771
     },
     "municipio/MS.json": {
-      "bytes": 63088,
-      "bytes_gzip": 13253
+      "bytes": 64351,
+      "bytes_gzip": 13315
     },
     "municipio/MT.json": {
-      "bytes": 113013,
-      "bytes_gzip": 22638
+      "bytes": 115284,
+      "bytes_gzip": 22730
     },
     "municipio/PA.json": {
-      "bytes": 115950,
-      "bytes_gzip": 24111
+      "bytes": 118253,
+      "bytes_gzip": 24233
     },
     "municipio/PB.json": {
-      "bytes": 176811,
-      "bytes_gzip": 34477
+      "bytes": 180378,
+      "bytes_gzip": 34612
     },
     "municipio/PE.json": {
-      "bytes": 148613,
-      "bytes_gzip": 30387
+      "bytes": 151572,
+      "bytes_gzip": 30531
     },
     "municipio/PI.json": {
-      "bytes": 177851,
-      "bytes_gzip": 34209
+      "bytes": 181434,
+      "bytes_gzip": 34341
     },
     "municipio/PR.json": {
-      "bytes": 317754,
-      "bytes_gzip": 62685
+      "bytes": 324137,
+      "bytes_gzip": 62883
     },
     "municipio/RJ.json": {
-      "bytes": 75195,
-      "bytes_gzip": 16733
+      "bytes": 76666,
+      "bytes_gzip": 16807
     },
     "municipio/RN.json": {
-      "bytes": 132597,
-      "bytes_gzip": 26157
+      "bytes": 135268,
+      "bytes_gzip": 26248
     },
     "municipio/RO.json": {
-      "bytes": 41527,
-      "bytes_gzip": 8783
+      "bytes": 42358,
+      "bytes_gzip": 8824
     },
     "municipio/RR.json": {
-      "bytes": 11944,
-      "bytes_gzip": 2903
+      "bytes": 12183,
+      "bytes_gzip": 2928
     },
     "municipio/RS.json": {
-      "bytes": 394291,
-      "bytes_gzip": 77170
+      "bytes": 402242,
+      "bytes_gzip": 77451
     },
     "municipio/SC.json": {
-      "bytes": 234470,
-      "bytes_gzip": 46405
+      "bytes": 239189,
+      "bytes_gzip": 46568
     },
     "municipio/SE.json": {
-      "bytes": 60041,
-      "bytes_gzip": 12652
+      "bytes": 61240,
+      "bytes_gzip": 12717
     },
     "municipio/SP.json": {
-      "bytes": 516523,
-      "bytes_gzip": 104374
+      "bytes": 526842,
+      "bytes_gzip": 104787
     },
     "municipio/TO.json": {
-      "bytes": 109891,
-      "bytes_gzip": 20549
+      "bytes": 112114,
+      "bytes_gzip": 20623
     },
     "malhas/br_uf.json": {
       "bytes": 762934,
@@ -489,8 +492,8 @@
       "bytes_gzip": 78640
     },
     "municipio/indice.json": {
-      "bytes": 366084,
-      "bytes_gzip": 78575
+      "bytes": 366489,
+      "bytes_gzip": 78709
     }
   }
 }

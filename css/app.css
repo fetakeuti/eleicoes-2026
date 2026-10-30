@@ -200,6 +200,12 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .mapa-svg .forma--uf.sob-municipios { fill: var(--mapa-sem-eleitorado) !important; cursor: default; }
 .mapa-svg .forma--uf.carregando { fill: var(--cor-linha-fraca) !important; }
 .mapa-svg .forma--ponto { stroke: var(--mapa-destaque-linha); stroke-width: 1; }
+.mapa-svg .forma.fora-recorte, .mapa-svg .ponto.fora-recorte { opacity: .35; cursor: default; }
+.mapa-svg .ponto.fora-recorte .ponto__alvo { pointer-events: none; }
+.mapa-svg .forma--uf.vazio { fill: var(--mapa-sem-eleitorado) !important; cursor: not-allowed; }
+.amostra-fora { background: var(--cor-linha); opacity: .35; }
+.tooltip__rec { font-weight: var(--peso-semi); }
+.ranking__lista button[aria-disabled="true"] { opacity: 1; cursor: not-allowed; color: var(--cor-apoio); }
 .mapa-svg .ponto__alvo { fill: transparent; cursor: pointer; }
 .mapa-svg .camada-virou path { fill: none; stroke: var(--cor-tinta); stroke-width: 2px; vector-effect: non-scaling-stroke; pointer-events: none; }
 .mapa-svg .destaque { fill: none; pointer-events: none; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
@@ -291,6 +297,31 @@ body.carregando-dados [data-slot] { min-height: 0; }
 .amostra-sem-eleitorado { background: var(--mapa-sem-eleitorado); }
 .amostra-sem-eleitorado.amostra-neutro { background: var(--mapa-neutro); }
 .nota-mapa { margin: 0; font-size: var(--tx-legenda); color: var(--cor-apoio); }
+
+/* ---------- Capitais × não capitais ---------- */
+.bloco-recortes { display: flex; flex-direction: column; gap: var(--esp-5); margin-top: var(--esp-8); }
+.secao__cab--leve { border-top: 1px solid var(--cor-tinta); padding-top: var(--esp-4); gap: var(--esp-2); }
+.secao__cab--leve .subtitulo { margin: 0; }
+.rc-colunas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: var(--esp-8); }
+.rc-coluna { display: flex; flex-direction: column; gap: var(--esp-3); }
+.rc-coluna h4 { margin: 0; }
+.rc-cand { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) auto; column-gap: var(--esp-4); align-items: center;
+  padding: var(--esp-2) 0; border-bottom: 1px solid var(--cor-linha-suave); }
+.rc-cand .cand b { font-size: var(--tx-pequeno); }
+.rc-cand .barras div:first-child { height: 14px; }
+.rc-cand .barras div + div { height: 10px; }
+.rc-valores { display: flex; flex-direction: column; align-items: flex-end; font-size: var(--tx-legenda); color: var(--cor-apoio); }
+.rc-valores b { font-size: var(--tx-corpo); color: var(--cor-tinta); }
+.rc-dif { color: var(--cor-texto-2); }
+.kpis--rc { grid-template-columns: 1fr; }
+.kpis--rc .kpi { border-left: 0; padding: var(--esp-3) 0; border-bottom: 1px solid var(--cor-linha-suave); }
+.kpis--rc .kpi__valor { font-size: var(--tx-display-m); }
+.rc-placares { display: inline-flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-5); }
+.rc-placar { display: inline-flex; align-items: center; gap: var(--esp-2); font-family: var(--fonte-texto); font-size: var(--tx-pequeno); font-weight: var(--peso-semi); }
+.rc-placar b { font-family: var(--fonte-display); font-size: var(--tx-display-m); font-weight: var(--peso-medio); }
+.rc-placar i { display: inline-block; width: 10px; height: 10px; border-radius: var(--raio-ponto); }
+.amostra--cheia { background: var(--cor-tinta); }
+.amostra--clara { background: var(--cor-linha); }
 
 /* ---------- Brancos e nulos ---------- */
 .kpis--bn { border-bottom: 1px solid var(--cor-tinta); padding-bottom: var(--esp-5); }

@@ -36,15 +36,24 @@ export function servidor() {
 
 export async function navegador() {
   const perfil = mkdtempSync(join(tmpdir(), 'webreport-cdp-'));
-  const porta = 9400 + Math.floor(Math.random() * 400);
-  const proc = spawn(CHROME, ['--headless=new', '--disable-gpu', '--hide-scrollbars', `--remote-debugging-port=${porta}`,
+  // porta 0: o Chrome escolhe uma porta livre e a grava em <perfil>/DevToolsActivePort. Com porta sorteada,
+  // os arquivos de teste rodando em paralelo podiam colidir e travar à espera de uma conexão que nunca abria.
+  const proc = spawn(CHROME, ['--headless=new', '--disable-gpu', '--hide-scrollbars', '--remote-debugging-port=0',
     `--user-data-dir=${perfil}`, 'about:blank'], { stdio: 'ignore' });
   let alvo;
-  for (let i = 0; i < 100 && !alvo; i++) {
-    try { alvo = (await (await fetch(`http://127.0.0.1:${porta}/json`)).json()).find((t) => t.type === 'page'); } catch { await espera(100); }
+  for (let i = 0; i < 150 && !alvo; i++) {
+    try {
+      const porta = readFileSync(join(perfil, 'DevToolsActivePort'), 'utf8').split('\n')[0].trim();
+      alvo = (await (await fetch(`http://127.0.0.1:${porta}/json`)).json()).find((t) => t.type === 'page');
+    } catch { await espera(100); }
   }
+  if (!alvo) { proc.kill(); throw new Error('o Chrome headless não abriu a porta de depuração'); }
   const ws = new WebSocket(alvo.webSocketDebuggerUrl);
-  await new Promise((r) => ws.addEventListener('open', r));
+  await new Promise((r, falha) => {
+    ws.addEventListener('open', r);
+    ws.addEventListener('error', () => falha(new Error('falha ao conectar no Chrome headless')));
+    setTimeout(() => falha(new Error('tempo esgotado conectando no Chrome headless')), 10000);
+  });
   let id = 0;
   const pend = new Map();
   const erros = [];

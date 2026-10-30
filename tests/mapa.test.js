@@ -74,7 +74,7 @@ test('ranking: LULA primeiro, FLAVIO primeiro, sem candidato', () => {
 
 test('estado na URL: ida e volta, e correções', () => {
   const e = lerHash('#mapa?t=2&m=venc&uf=SP&mun=3547809');
-  assert.deepEqual(e, { turno: '2', met: 'venc', cand: '13', uf: 'SP', mun: 3547809 });
+  assert.deepEqual(e, { turno: '2', met: 'venc', cand: '13', rec: 'todos', uf: 'SP', mun: 3547809 });
   assert.equal(escreverHash(e), '#mapa?t=2&m=venc&uf=SP&mun=3547809');
   assert.equal(lerHash('#resultado'), null);
   assert.equal(lerHash('#mapa?t=v&m=venc').met, 'flip', 'variação exige métrica de variação');
@@ -97,4 +97,14 @@ test('busca: normaliza acento, caixa, hífen e apóstrofo', () => {
   assert.ok(busca(ind, 'sao').length <= 6);
   assert.deepEqual(busca(ind, 's'), [], 'menos de 2 letras');
   assert.deepEqual(busca(ind, 'zzzzqq'), []);
+});
+
+test('recorte na URL: rec=cap | rec=ncap; ausente = todos', () => {
+  assert.equal(lerHash('#mapa?t=2&m=venc').rec, 'todos');
+  assert.equal(lerHash('#mapa?t=2&m=venc&rec=cap').rec, 'cap');
+  assert.equal(lerHash('#mapa?t=1&m=abst&rec=ncap&uf=SP').rec, 'ncap');
+  assert.equal(lerHash('#mapa?t=2&m=venc&rec=xyz').rec, 'todos', 'valor inválido volta ao padrão');
+  assert.equal(escreverHash({ ...lerHash('#mapa?t=2&m=venc'), rec: 'cap' }), '#mapa?t=2&m=venc&rec=cap');
+  assert.equal(escreverHash(lerHash('#mapa?t=2&m=venc')), '#mapa?t=2&m=venc', 'todos não aparece na URL');
+  assert.equal(escreverHash(lerHash('#mapa?t=2&m=venc&rec=ncap&uf=SP&mun=3547809')), '#mapa?t=2&m=venc&rec=ncap&uf=SP&mun=3547809');
 });

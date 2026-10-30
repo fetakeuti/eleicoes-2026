@@ -7,9 +7,10 @@ import { slot, esc, segmentado, marcaPressionado, lerJSON, corCand, candidato } 
 import { pct, pctCandidato, inteiro, difPP, decimal, votos as fVotos } from '../formato.js';
 import { resultado } from '../regras.js';
 import { valor, legenda, ordens, ordena, METRICAS, CANDIDATOS_PCT, NOME_CURTO } from './metricas.js';
-import { lerHash, escreverHash, corrige, mudouNivel, PADRAO } from './estado.js';
+import { lerHash, escreverHash, corrige, mudouNivel, PADRAO, RECORTES } from './estado.js';
 import { iniciarBusca } from './busca-ui.js';
 import { ligaLista, desenhaLista, chaveEmFoco as focoEm } from './lista.js';
+import { renderRecortes } from './recortes.js';
 
 const W = 800, H = 720;
 const MIN_PX2 = 6;                    // município com bbox menor que isso na tela vira ponto (HANDOFF §4.2)
@@ -29,7 +30,11 @@ export async function iniciarMapaBrasil(dados) {
   D = dados;
   for (const u of D.ufs) ufPorSigla.set(u.uf, u);
   montaControles();
-  iniciarBusca(slot('mBusca'), (m) => aplica({ ...est, uf: m.uf, mun: m.cd_ibge, met: est.met === 'cand' ? 'venc' : est.met }, true));
+  renderRecortes(D);
+  iniciarBusca(slot('mBusca'), (m) => {
+    const fora = (est.rec === 'cap' && !m.capital) || (est.rec === 'ncap' && m.capital);
+    aplica({ ...est, uf: m.uf, mun: m.cd_ibge, met: est.met === 'cand' ? 'venc' : est.met, rec: fora ? 'todos' : est.rec }, true);
+  });
   window.addEventListener('popstate', () => {
     if (location.hash.startsWith('#exterior?')) return;   // entrada do histórico do mapa-múndi
     const novo = lerHash(location.hash);
@@ -77,6 +82,11 @@ async function aplica(novo, historico = true) {
   ui.hov = null;
   sincronizaControles();
   if (ufMudou) await trocaNivel();
+  const fixado = est.mun && unidade(est.mun);
+  if (fixado && fixado.fora) {   // o recorte novo não inclui o município fixado: solta, sem nova entrada no histórico
+    est = { ...est, mun: null };
+    if (historico) history.replaceState(null, '', escreverHash(est));
+  }
   pinta();
 }
 
@@ -202,17 +212,31 @@ function enquadra(f) {
 
 // ------------------------------------------------------------------ dados de cada forma
 const nivelAtual = () => (est.uf && nivelMun.has(est.uf) ? 'mun' : 'uf');
+
+/** Turnos de uma UF no recorte ativo (D57). null = sem municípios no recorte (DF em "Não capitais"). */
+function turnosUF(u) {
+  if (est.rec === 'cap') return u.recortes.capital.turnos;
+  if (est.rec === 'ncap') return u.recortes.nao_capital?.turnos ?? null;
+  return u.turnos;
+}
+const foraDoRecorte = (m) => (est.rec === 'cap' && !m.capital) || (est.rec === 'ncap' && m.capital);
+
+/** Rótulo curto do recorte para títulos, tooltip e ranking. */
+const SUFIXO_RECORTE = { todos: '', cap: ' · só capitais', ncap: ' · sem as capitais' };
+
 function unidade(chave) {
   if (chave === null || chave === undefined) return null;
   if (typeof chave === 'string' && ufPorSigla.has(chave)) {
     const u = ufPorSigla.get(chave);
-    return { chave, nome: u.nome, tipo: 'uf', turnos: u.turnos };
+    return { chave, nome: u.nome, tipo: 'uf', turnos: turnosUF(u), uf: chave, recortes: u.recortes };
   }
   const nv = est.uf && nivelMun.get(est.uf);
   const m = nv && nv.municipios.get(Number(chave));
-  return m ? { chave: m.cd_ibge, nome: nv.nomes.get(m.cd_ibge) || m.nome, tipo: 'mun', uf: m.uf, turnos: m.turnos } : null;
+  return m ? { chave: m.cd_ibge, nome: nv.nomes.get(m.cd_ibge) || m.nome, tipo: 'mun', uf: m.uf, turnos: m.turnos,
+    capital: m.capital, fora: foraDoRecorte(m) } : null;
 }
-const val = (u) => valor(u.turnos, est, D.meta.ordem_candidatos);
+const VAZIO = { v: 0, mag: 0, cor: null, especial: 'vazio', txt: 'Sem municípios neste recorte' };
+const val = (u) => (u.turnos ? valor(u.turnos, est, D.meta.ordem_candidatos) : VAZIO);
 const nomeCand = (nr) => candidato(D.meta, nr).nome_urna;
 
 // ------------------------------------------------------------------ pintura (só atributos)
@@ -225,10 +249,17 @@ function pinta() {
     const u = unidade(deUF ? chave : Number(chave));
     if (!u) return;
     const r = val(u);
-    if (r.especial) especiais.add(r.especial);
+    // no drill-down a legenda descreve os municípios: estados especiais das UFs (apagadas) não entram
+    if (r.especial && !u.fora && (u.tipo === 'mun' || nivel === 'uf')) especiais.add(r.especial);
     this.style.fill = r.especial === 'sem' ? 'url(#hachura-br)' : r.cor || 'var(--mapa-sem-eleitorado)';
-    this.classList.toggle('virou', !!r.virou);
-    if (this.getAttribute('role') === 'button') this.setAttribute('aria-label', `${u.nome}: ${r.txt}`);
+    this.classList.toggle('virou', !!r.virou && !u.fora);
+    this.classList.toggle('vazio', r.especial === 'vazio');
+    this.classList.toggle('fora-recorte', !!u.fora);
+    this.parentNode.classList?.toggle('fora-recorte', !!u.fora && this.classList.contains('forma--ponto'));
+    if (this.getAttribute('role') === 'button') {
+      this.setAttribute('aria-label', `${u.nome}${SUFIXO_RECORTE[est.rec]}: ${r.txt}`);
+      if (r.especial === 'vazio') this.setAttribute('aria-disabled', 'true'); else this.removeAttribute('aria-disabled');
+    }
     this.__escura = ESCURAS.test(r.cor || '');
   });
   preenche(camadas.ufs.selectAll('path'), true);
@@ -294,6 +325,7 @@ function ligaEventos(el) {
   const chaveDe = (alvo) => alvo.closest?.('[data-chave]')?.dataset.chave ?? null;
   const ativo = (chave) => {
     if (chave === null) return false;
+    if (unidade(ufPorSigla.has(chave) ? chave : Number(chave))?.fora) return false;   // fora do recorte: sem destaque
     if (nivelAtual() === 'uf') return true;
     return ufPorSigla.has(chave) ? chave !== est.uf : true;   // no drill-down, as outras UFs também respondem
   };
@@ -330,10 +362,12 @@ function hover(chave, alvo) {
 function escolhe(chave) {
   if (ufPorSigla.has(chave)) {
     if (chave === est.uf) return;
+    if (!unidade(chave).turnos) return;   // sem municípios neste recorte (DF em "Não capitais"): sem drill-down
     aplica({ ...est, uf: chave, mun: null });
     return;
   }
   const cd = Number(chave);
+  if (unidade(cd)?.fora) return;
   aplica({ ...est, mun: est.mun === cd ? null : cd });
 }
 
@@ -343,7 +377,10 @@ function posicionaTooltip(chave, alvo) {
   const u = unidade(chave);
   if (!u || !matchMedia('(hover: hover)').matches) { tip.hidden = true; return; }
   const r = val(u);
-  tip.innerHTML = `<b>${esc(u.nome)}${u.tipo === 'mun' ? ` · ${u.uf}` : ''}</b><span>${esc(r.txt)}</span>`;
+  const rec = u.tipo === 'uf' && est.rec !== 'todos'
+    ? `<span class="tooltip__rec">${esc(RECORTES[est.rec])}${est.rec === 'cap' ? `: ${esc(u.recortes.capital.nome)}` : ''}</span>` : '';
+  const txt = r.especial === 'vazio' ? 'Sem municípios neste recorte: Brasília é o único município do DF, e é a capital.' : r.txt;
+  tip.innerHTML = `<b>${esc(u.nome)}${u.tipo === 'mun' ? ` · ${u.uf}${u.capital ? ' · capital' : ''}` : ''}</b>${rec}<span>${esc(txt)}</span>`;
   tip.hidden = false;
   const caixa = slot('mCaixa').getBoundingClientRect();
   const forma = (formaDe(chave) || alvo).getBoundingClientRect();
@@ -375,6 +412,7 @@ function montaControles() {
     const b = e.target.closest('button');
     if (b && b.getAttribute('aria-disabled') !== 'true') aplica({ ...est, cand: b.dataset.id });
   };
+  segmentado(slot('mRecorte'), Object.entries(RECORTES), est.rec, (r) => aplica({ ...est, rec: r }));
   slot('mVoltar').onclick = () => aplica({ ...est, uf: null, mun: null });
 }
 
@@ -388,6 +426,7 @@ function montaMetricas() {
 
 function sincronizaControles() {
   marcaPressionado(slot('mTurno'), est.turno);
+  marcaPressionado(slot('mRecorte'), est.rec);
   if (grupoMetricas !== (est.turno === 'v')) montaMetricas();
   else marcaPressionado(slot('mMetrica'), est.met, est.uf ? ['cand'] : []);
   const cand = est.met === 'cand';
@@ -403,7 +442,10 @@ function renderLegenda(especiais) {
   if (especiais.has('empate')) extras.push(['<i class="amostra-empate"></i>', 'empate em votos']);
   if (especiais.has('sem')) extras.push(['<i class="amostra-hachura"></i>', 'sem votantes']);
   if (especiais.has('ponto')) extras.push(['<i class="amostra-ponto"></i>', 'município pequeno, desenhado como ponto']);
-  slot('mLegenda').innerHTML = `<div class="legenda__cab">${esc(lg.titulo)}<small>${esc(lg.nota)}</small></div>
+  if (especiais.has('vazio')) extras.push(['<i class="amostra-sem-eleitorado"></i>', 'sem municípios neste recorte (DF)']);
+  if (est.rec !== 'todos' && nivelAtual() === 'mun') extras.push(['<i class="amostra-fora"></i>', 'fora do recorte']);
+  const titulo = lg.titulo.replace(/, (1º turno|2º turno|entre os turnos)$/, ' · $1') + SUFIXO_RECORTE[est.rec];
+  slot('mLegenda').innerHTML = `<div class="legenda__cab">${esc(titulo)}<small>${esc(lg.nota)}</small></div>
     ${classesLegenda(lg.itens)}
     ${extras.length ? `<div class="legenda__extras">${extras.map(([i, t]) => `<span>${i}${esc(t)}</span>`).join('')}</div>` : ''}`;
 }
@@ -422,7 +464,7 @@ function classesLegenda(itens) {
 function itensDoNivel() {
   if (nivelAtual() === 'mun') {
     const nv = nivelMun.get(est.uf);
-    return [...nv.municipios.values()].map((m) => unidade(m.cd_ibge));
+    return [...nv.municipios.values()].filter((m) => !foraDoRecorte(m)).map((m) => unidade(m.cd_ibge));
   }
   return D.ufs.filter((u) => u.uf !== 'ZZ').map((u) => unidade(u.uf));
 }
@@ -432,8 +474,8 @@ function renderRanking() {
   const itens = itensDoNivel().map((u) => ({ ...u, val: val(u) }));
   const lista = ordens(est.met);
   if (!lista.some(([id]) => id === ui.ordem)) ui.ordem = 'a';
-  slot('mRankTitulo').textContent = nivel === 'mun'
-    ? `Municípios de ${ufPorSigla.get(est.uf).nome} (${inteiro(itens.length)})` : 'Ranking das 27 UFs';
+  slot('mRankTitulo').textContent = (nivel === 'mun'
+    ? `Municípios de ${ufPorSigla.get(est.uf).nome} (${inteiro(itens.length)})` : 'Ranking das 27 UFs') + SUFIXO_RECORTE[est.rec];
   slot('mRankUnid').textContent = { venc: 'margem (p.p.)', cand: '% dos válidos', abst: 'abstenção', flip: 'situação', dmarg: 'p.p.', dabst: 'p.p.' }[est.met];
   const po = slot('mOrdem');
   po.innerHTML = lista.map(([id, rot]) => `<button type="button" data-id="${id}" aria-pressed="${id === ui.ordem}">${rot}</button>`).join('');
@@ -452,6 +494,7 @@ function renderRanking() {
       html: `<span class="pos num">${i + 1}</span><b>${esc(nivel === 'mun' ? x.nome : x.chave)}</b>
       <span class="trilho-rank"><span ${fundo}></span></span><span class="num valor">${esc(x.val.txt)}</span>` };
   }), est.mun);
+  for (const x of ord) if (x.val.especial === 'vazio') rk.querySelector(`[data-chave="${x.chave}"]`)?.setAttribute('aria-disabled', 'true');
   if (!rk.dataset.ligada) { rk.dataset.ligada = '1'; ligaLista(rk, { aoHover: hover, aoEscolher: escolhe }); }
   marcaRanking();
 }
@@ -468,19 +511,30 @@ function renderDetalhe() {
   let nota;
   if (u) {
     const fixado = u.tipo === 'mun' && u.chave === est.mun;
-    nota = u.tipo === 'uf' && u.chave !== est.uf ? 'Clique para ver os municípios.' : fixado ? 'Município fixado. Clique de novo para soltar.' : 'Clique para fixar.';
+    nota = u.tipo === 'uf' && !u.turnos ? 'Sem municípios neste recorte.'
+      : u.tipo === 'uf' && u.chave !== est.uf ? 'Clique para ver os municípios.' : fixado ? 'Município fixado. Clique de novo para soltar.' : 'Clique para fixar.';
   } else if (nivel === 'mun') {
     u = unidade(est.uf);
     nota = 'Total da UF. Passe o cursor num município para ver os números.';
   } else {
-    u = { nome: 'Brasil', tipo: 'br', turnos: D.nacional.turnos };
-    nota = 'Total nacional, inclui o exterior.';
+    const rn = D.nacional.recortes;
+    u = { nome: 'Brasil', tipo: 'br', turnos: { todos: D.nacional.turnos, cap: rn.capitais.turnos, ncap: rn.nao_capitais.turnos }[est.rec] };
+    nota = { todos: 'Total nacional, inclui o exterior.', cap: 'Soma das 27 capitais; o exterior não entra.',
+      ncap: `Soma dos ${inteiro(rn.nao_capitais.n_municipios)} municípios que não são capital; o exterior não entra.` }[est.rec];
   }
+  // subtítulo com o recorte ativo
+  let sub = '';
+  if (u.tipo === 'mun') sub = `${ufPorSigla.get(u.uf).nome}${u.capital ? ' · capital' : ''}`;
+  else if (u.tipo === 'uf' && est.rec === 'cap') sub = `Só a capital: ${u.recortes.capital.nome}`;
+  else if (u.tipo === 'uf' && est.rec === 'ncap') sub = u.recortes.nao_capital ? `Sem a capital: ${inteiro(u.recortes.nao_capital.n_municipios)} municípios` : 'Sem a capital';
+  else if (u.tipo === 'br' && est.rec !== 'todos') sub = est.rec === 'cap' ? 'Só as 27 capitais' : 'Sem as capitais';
   const t = est.turno;
   const linha = (cor, nome, a, b) => `<div class="detalhe__linha"><span>${cor ? `<i style="background:${cor}"></i>` : ''}<b>${esc(nome)}</b></span>
     <span class="num"><b>${a}</b> <small>${b}</small></span></div>`;
   let h;
-  if (t === 'v') {
+  if (!u.turnos) {
+    h = '<p class="aviso">O Distrito Federal tem um só município, Brasília, que é a capital. Não há municípios neste recorte.</p>';
+  } else if (t === 'v') {
     const [a, b] = [u.turnos['1'], u.turnos['2']];
     h = ['13', '22'].map((nr) => linha(corCand(nr), nomeCand(nr), `${pct(a.pct_validos[nr])} → ${pct(b.pct_validos[nr])}`, difPP(a.pct_validos[nr], b.pct_validos[nr]))).join('')
       + linha(null, 'Abstenção', `${pct(a.taxa_abstencao)} → ${pct(b.taxa_abstencao)}`, difPP(a.taxa_abstencao, b.taxa_abstencao));
@@ -495,18 +549,18 @@ function renderDetalhe() {
     h += linha(null, 'Abstenção', pct(b.taxa_abstencao), `${inteiro(b.abstencao)} eleitores`)
       + linha(null, 'Comparecimento', inteiro(b.comparecimento), 'eleitores');
   }
-  const r = u.tipo === 'br' ? null : val(u);
+  const r = u.tipo === 'br' || !u.turnos ? null : val(u);
   let aviso = '';
   if (r?.especial === 'empate') aviso = `<p class="aviso">${esc(r.txt)}.</p>`;
   if (r?.especial === 'sem') aviso = '<p class="aviso">Sem votantes neste turno.</p>';
   // o botão fica sempre no fluxo (invisível quando não se aplica): a altura do painel não muda no hover,
   // e o ranking logo abaixo não pula sob o cursor
-  const podeVer = u.tipo === 'uf' && u.chave !== est.uf && nivel === 'uf';
+  const podeVer = u.tipo === 'uf' && u.chave !== est.uf && nivel === 'uf' && !!u.turnos;
   const ver = `<button type="button" class="botao detalhe__ver" data-ver="${podeVer ? u.chave : ''}"${podeVer ? '' : ' tabindex="-1" aria-hidden="true" style="visibility:hidden"'}>Ver municípios</button>`;
   slot('mDetalhe').classList.toggle('detalhe--t1', t === '1');
   slot('mDetalhe').innerHTML = `<div class="detalhe__cab"><span class="detalhe__nome">${esc(u.nome)}</span>
       <span class="rotulo">${t === 'v' ? '1º → 2º turno' : `${t}º turno`}</span></div>
-    ${u.tipo === 'mun' ? `<span class="detalhe__sub">${esc(ufPorSigla.get(u.uf).nome)}</span>` : ''}
+    ${sub ? `<span class="detalhe__sub">${esc(sub)}</span>` : ''}
     ${aviso}${h}<p class="detalhe__nota">${nota}</p>${ver}`;
   const bv = slot('mDetalhe').querySelector('[data-ver]');
   if (bv.dataset.ver) bv.onclick = () => escolhe(bv.dataset.ver);
@@ -554,7 +608,8 @@ function renderZZ() {
     txt = `Exterior: ${NOME_CURTO['13']} ${pct(bl.pct_validos['13'])} × ${NOME_CURTO['22']} ${pct(bl.pct_validos['22'])} no ${t}º turno`
       + ` (${inteiro(bl.comparecimento)} votantes; ${lider(bl, t) === 'empate' ? 'empate' : `venceu ${lider(bl, t)}`}).`;
   }
-  slot('mZZ').innerHTML = `<b>ZZ</b><span>${txt} Fica fora do mapa e da escala do Brasil. <a href="#exterior">Ver por país</a>.</span>`;
+  const nota = est.rec !== 'todos' ? ' O recorte capitais × não capitais não se aplica ao exterior.' : '';
+  slot('mZZ').innerHTML = `<b>ZZ</b><span>${txt} Fica fora do mapa e da escala do Brasil.${nota} <a href="#exterior">Ver por país</a>.</span>`;
 }
 
 // ------------------------------------------------------------------ carregando / erro
